@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMagique - Dalal's Movies</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dark">
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="logo">
+            <h1>CineMagique</h1>
+        </div>
+        <div class="mode-toggle" id="mode-toggle">🌙</div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h2 class="animate__animated animate__fadeIn">Welcome to CineMagique</h2>
+            <p class="animate__animated animate__fadeIn">Discover magical movies with stunning visuals and immersive experiences!</p>
+        </div>
+    </section>
+    
+
+    <!-- Movie Carousel -->
+    <section class="movie-carousel">
+        <h2>Trending Movies</h2>
+        <div class="carousel-container">
+            <div class="movie-item">
+                <img src="{{ url_for('static', filename='images/1.png') }}" alt="Inception">
+                <p>Inception</p>
+            </div>
+            <div class="movie-item">
+                <img src="{{ url_for('static', filename='images/2.png') }}" alt="Interstellar">
+                <p>Interstellar</p>
+            </div>
+            <div class="movie-item">
+                <img src="{{ url_for('static', filename='images/3.png') }}" alt="The Dark Knight">
+                <p>The Dark Knight</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about">
+        <h2>About CineMagique</h2>
+        <p>We bring you the best cinematic experiences, from timeless classics to the latest blockbusters.</p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 CineMagique - All rights reserved | Created by Dalal</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
