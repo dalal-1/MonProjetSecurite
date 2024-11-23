@@ -1,4 +1,4 @@
-/* General Body Styles */
+
 body {
     font-family: 'Arial', sans-serif;
     background-color: #121212;
@@ -18,9 +18,9 @@ h1, h2, h3, p {
 .navbar {
     position: fixed;
     top: 0;
-    left: 50; /* Ajouté pour s'assurer que la navbar commence à gauche */
+    left: 50; 
     width: 100%;
-    padding: 30px 20px; /* Ajuste les valeurs de padding pour un espacement plus approprié */
+    padding: 30px 20px; 
     background: rgba(0, 0, 0, 0.85);
     display: flex;
     justify-content: space-between;
@@ -51,7 +51,7 @@ h1, h2, h3, p {
 }
 
 /* Hero Section */
-/* Hero Section */
+
 .hero {
     position: relative;
     height: 100vh;
