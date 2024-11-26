@@ -2,6 +2,7 @@ from flask import Flask,render_template
 from flask_bootstrap import Bootstrap
 print("Test de modification pour Jenkins")
 print("wa finallyyyyyyyy aaayyyy7")
+print("waa lakhdmat")
 app=Flask(__name__)
 Bootstrap(app)
 @app.route('/')
