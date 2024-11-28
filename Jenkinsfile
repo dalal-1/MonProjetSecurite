@@ -4,8 +4,8 @@ pipeline {
         stage('Test Sécurité') {
             steps {
                 script {
-                    // Exemple d'un test de sécurité basique : vérifier si le port 80 est ouvert
-                    def result = bat(script: 'netstat -an | findstr ":80"', returnStatus: true)
+                    // Test simplifié pour vérifier si le port 80 est ouvert
+                    def result = bat(script: 'telnet localhost 80', returnStatus: true)
                     if (result != 0) {
                         error 'Port 80 fermé - Test de sécurité échoué!'
                     } else {
