@@ -10,14 +10,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Cloning the repository..."
-                git url: "${GIT_REPO}"
+                git url: "${GIT_REPO}", branch: 'main'  // Spécifie la branche 'main'
             }
         }
         
         stage('Build') {
             steps {
                 echo "Building the project..."
-                // Remplacez cette ligne avec la commande de build spécifique à votre projet
+                // Remplace cette ligne avec la commande de build spécifique à ton projet
                 bat 'npm install'  // Exemple pour un projet Node.js
             }
         }
@@ -43,9 +43,7 @@ pipeline {
         stage('Deployment') {
             steps {
                 echo "Deploying the application..."
-                // Ajoutez vos commandes de déploiement ici
-                // Par exemple, si vous déployez une application Flask ou autre :
-                // bat 'python deploy.py' ou toute autre commande de déploiement
+                // Ajoute tes commandes de déploiement ici
             }
         }
 
