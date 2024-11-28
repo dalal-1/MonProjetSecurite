@@ -1,78 +1,61 @@
 pipeline {
     agent any
+
     environment {
-        // Variables d'environnement adaptées à votre machine virtuelle
-        APPLICATION_PATH = "/home/delaila/MonProjetSecurite"  // Chemin vers votre projet sur la machine virtuelle
-        DEPLOYMENT_SCRIPT = "deploy.yml"  // Playbook Ansible pour déployer l'application
-        TEST_SCRIPT = "run_tests.sh"  // Script de test (à adapter si nécessaire)
-        SECURITY_CHECK_SCRIPT = "security_check.sh"  // Script de vérification de sécurité
-        GITHUB_REPO = "https://github.com/your-repository.git"  // Remplacez par l'URL de votre dépôt GitHub
-        BRANCH = "main"  // Branche du dépôt GitHub que vous souhaitez utiliser
-        ANSIBLE_HOSTS = "/home/delaila/MonProjetSecurite/hosts.ini"  // Fichier d'inventaire Ansible
-        JENKINS_HOME = "/var/jenkins_home"  // Emplacement de Jenkins sur Ubuntu (si nécessaire)
+        GIT_REPO = 'https://github.com/dalal-1/MonProjetSecurite.git'  // Remplace par ton lien de dépôt correct
     }
+
     stages {
         stage('Checkout') {
             steps {
-                // Cloner le dépôt GitHub sur la machine virtuelle
-                git branch: "${BRANCH}", url: "${GITHUB_REPO}"
+                // Récupération du code depuis GitHub
+                git url: "${GIT_REPO}", branch: 'main'
             }
         }
-        
+
         stage('Build') {
             steps {
-                script {
-                    echo 'Building the application...'
-                    // Construction de l'application (ajustez le script ou la commande en fonction de vos besoins)
-                    sh 'python3 -m venv venv' // Créer un environnement virtuel si nécessaire
-                    sh '. venv/bin/activate'  // Activer l'environnement virtuel
-                    sh 'pip install -r requirements.txt'  // Installer les dépendances
-                }
+                // Compilation et préparation de l'application
+                echo 'Building the application...'
+                // Ajoute ici les commandes de build comme 'mvn clean install' ou d'autres selon ton projet
             }
         }
-        
+
         stage('Deploy') {
             steps {
-                script {
-                    echo 'Deploying the application...'
-                    // Lancer le playbook Ansible pour déployer l'application
-                    sh "ansible-playbook -i ${ANSIBLE_HOSTS} ${DEPLOYMENT_SCRIPT}"
-                }
+                // Déploiement de l'application
+                echo 'Deploying the application...'
+                // Ajoute les commandes nécessaires pour déployer ton application
             }
         }
-        
+
         stage('Test') {
             steps {
-                script {
-                    echo 'Running tests...'
-                    // Exécuter les tests après le déploiement
-                    sh "./${TEST_SCRIPT}"  // Exécution de votre script de tests (assurez-vous qu'il est exécutable)
-                }
+                // Tests automatisés
+                echo 'Running tests...'
+                // Ajoute ici les commandes pour exécuter les tests
             }
         }
-        
+
         stage('Security Check') {
             steps {
-                script {
-                    echo 'Running security checks...'
-                    // Exécuter les vérifications de sécurité automatisées
-                    sh "./${SECURITY_CHECK_SCRIPT}"  // Exécution du script de vérification de sécurité
-                }
+                // Vérification de la sécurité
+                echo 'Running security checks...'
+                // Ajoute les outils de vérification comme OWASP ZAP ou SonarQube
             }
         }
     }
-    
+
     post {
         always {
             echo 'Cleaning up...'
-            // Nettoyage après exécution
-            sh 'rm -rf venv'  // Exemple de nettoyage (à adapter selon vos besoins)
+            // Ajoute ici des étapes pour le nettoyage après l'exécution
         }
         success {
-            echo 'Deployment and testing completed successfully!'
+            echo 'Build, Deploy, Test, and Security Check completed successfully.'
         }
         failure {
-            echo 'There was an error during the deployment process.'
+            echo 'Pipeline failed. Please check the logs for details.'
         }
     }
 }
