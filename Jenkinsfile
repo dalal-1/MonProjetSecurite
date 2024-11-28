@@ -1,12 +1,17 @@
 pipeline {
     agent any
     stages {
-        stage('PowerShell Test') {
+        stage('Test PowerShell Webhook') {
             steps {
-                // Afficher les variables d'environnement
-                bat 'echo %PATH%' 
-                bat 'cmd /c echo Hello from CMD'
-                bat 'powershell -Command "Write-Host \'Hello from PowerShell!\'"'
+                script {
+                    bat '''powershell -NoProfile -ExecutionPolicy Bypass -Command "
+                        $headers = @{
+                            'Content-Type' = 'application/json'
+                        }
+                        $body = '{"content": "Test du webhook Discord"}'
+                        Invoke-RestMethod -Uri 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd' -Method Post -Headers $headers -Body $body
+                    "'''
+                }
             }
         }
     }
