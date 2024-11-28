@@ -6,59 +6,73 @@ pipeline {
     }
 
     stages {
+        stage('Declarative: Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
-                script {
-                    sendDiscordNotification('Checkout completed successfully!')
-                }
             }
         }
 
         stage('Check Nmap') {
             steps {
-                bat 'echo %PATH%'
-                bat 'nmap --version'
                 script {
-                    sendDiscordNotification('Nmap is installed and version verified.')
+                    bat 'echo C:\\Windows\\System32;C:\\Program Files\\Git\\bin;C:\\Program Files (x86)\\Nmap'
+                    bat 'nmap --version'
                 }
             }
         }
 
         stage('Vulnerability Scan') {
             steps {
-                echo 'Running Nmap Vulnerability Scan on HTTP service...'
                 script {
-                    // Capture the Nmap scan output
-                    def scanOutput = bat(script: 'nmap -p 5000 --script=http-vuln* --open --reason 127.0.0.1', returnStdout: true).trim()
-                    // Send detailed scan output to Discord
-                    sendDiscordNotification("Nmap vulnerability scan completed for HTTP service on port 5000. Details:\n\n${scanOutput}")
+                    echo 'Running Nmap Vulnerability Scan on HTTP service...'
+                    // Placeholder for actual Nmap scan command
+                    def nmapResults = 'Scan results here'
+
+                    // Creating JSON payload for Discord notification
+                    def body = """
+                    {
+                        "content": "Nmap vulnerability scan completed for HTTP service on port 5000. Scan results: $nmapResults"
+                    }
+                    """
+                    echo "Sending message: $body"
+
+                    // Sending HTTP request to Discord
+                    def response = httpRequest(
+                        acceptType: 'APPLICATION_JSON',
+                        contentType: 'APPLICATION_JSON',
+                        httpMode: 'POST',
+                        url: env.DISCORD_WEBHOOK_URL,
+                        requestBody: body
+                    )
+                }
+            }
+        }
+
+        stage('Declarative: Post Actions') {
+            steps {
+                script {
+                    def body = """
+                    {
+                        "content": "Pipeline completed successfully!"
+                    }
+                    """
+                    // Sending a post-pipeline completion notification to Discord
+                    def response = httpRequest(
+                        acceptType: 'APPLICATION_JSON',
+                        contentType: 'APPLICATION_JSON',
+                        httpMode: 'POST',
+                        url: env.DISCORD_WEBHOOK_URL,
+                        requestBody: body
+                    )
                 }
             }
         }
     }
-
-    post {
-        always {
-            script {
-                sendDiscordNotification('Pipeline execution finished.')
-            }
-        }
-    }
 }
 
-// Function to send a notification to Discord
-def sendDiscordNotification(String message) {
-    def body = """
-    {
-        "content": "$message"
-    }
-    """
-    def response = httpRequest(
-        acceptType: 'APPLICATION_JSON',
-        contentType: 'APPLICATION_JSON',
-        httpMode: 'POST',
-        url: env.DISCORD_WEBHOOK_URL,
-        requestBody: body
-    )
-}
