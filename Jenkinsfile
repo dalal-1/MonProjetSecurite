@@ -3,7 +3,8 @@ pipeline {
     stages {
         stage('Test CMD Access') {
             steps {
-               bat 'echo Hello World'
+              powershell 'echo Hello'
+
 
 
             }
