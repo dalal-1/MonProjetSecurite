@@ -1,12 +1,12 @@
 pipeline {
     agent any
+    environment {
+        PATH = "C:\\Windows\\System32\\cmd.exe"
+    }
     stages {
-        stage('Test CMD Access') {
+        stage('Test') {
             steps {
-              powershell 'echo Hello'
-
-
-
+                bat 'echo Hello World'
             }
         }
     }
