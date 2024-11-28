@@ -1,89 +1,62 @@
 pipeline {
     agent any
 
-    environment {
-        GIT_REPO = 'https://github.com/dalal-1/MonProjetSecurite.git'  // Lien de ton dépôt Git
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'  // Webhook Discord
-    }
-
-    triggers {
-        // Déclenchement automatique à chaque changement sur la branche 'main' du dépôt
-        githubPush()  // Déclenche automatiquement le pipeline lors d'un push sur GitHub
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                // Récupération du code depuis GitHub
-                git url: "${GIT_REPO}", branch: 'main'
+                // Vérifie que les sources du projet sont bien récupérées
+                checkout scm
             }
         }
 
         stage('Build') {
             steps {
-                // Compilation et préparation de l'application
-                echo 'Building the application...'
-                // Ajoute ici les commandes de build comme 'mvn clean install' ou autres
+                echo "Building the project..."
+                // Place ici les étapes nécessaires pour la compilation ou la construction du projet
+                // Par exemple, si tu utilises npm ou Maven :
+                // bat 'npm install'  // Pour un projet Node.js
+                // bat 'mvn clean install'  // Pour un projet Java/Maven
             }
         }
 
-        stage('Deploy') {
+        stage('Codacy Analysis') {
             steps {
-                // Déploiement de l'application
-                echo 'Deploying the application...'
-                // Ajoute les commandes nécessaires pour déployer ton application
+                echo "Performing Codacy analysis..."
+                // Remplace ceci par les étapes spécifiques pour analyser ton projet avec Codacy
+                // Exemple d'intégration Codacy avec GitHub et Jenkins :
+                // bat 'curl -s https://www.codacy.com/project/{YOUR_PROJECT_TOKEN}/coverage-reports?token={YOUR_TOKEN}'
+                // Assure-toi que tu as configuré l'outil Codacy ou un équivalent pour ton projet
             }
         }
 
-        stage('Test') {
+        stage('Notify Discord') {
             steps {
-                // Tests automatisés
-                echo 'Running tests...'
-                // Ajoute ici les commandes pour exécuter les tests
+                echo "Notifying Discord..."
+                // Remplace cette section par la logique d'intégration de Discord
+                // Tu peux envoyer un message Discord via webhook comme ceci :
+                // bat 'curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"Build complete\"}" https://discord.com/api/webhooks/{webhook_id}'
             }
         }
 
-        stage('Security Check') {
+        stage('Deployment') {
             steps {
-                // Vérification de la sécurité
-                echo 'Running security checks...'
-                // Ajoute les outils de vérification comme OWASP ZAP ou SonarQube
+                echo "Deploying the application..."
+                // Cette section est dédiée à l'automatisation du déploiement
+                // Si tu utilises des outils comme Ansible ou Docker, intègre ici les commandes correspondantes
+                // Exemple avec Docker (assure-toi d'avoir Docker configuré sur la machine) :
+                // bat 'docker-compose up -d'
+                // Si tu as des scripts de déploiement spécifiques, appelle-les ici
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up...'
-            // Ajoute ici des étapes pour le nettoyage après l'exécution
-        }
         success {
-            echo 'Build, Deploy, Test, and Security Check completed successfully.'
-            // Notification Discord sur succès
-            script {
-                def message = "✅ **Pipeline Success**\nBuild, deploy, tests, and security checks were completed successfully."
-                sendDiscordNotification(message)
-            }
+            echo "The build and deployment were successful!"
         }
+
         failure {
-            echo 'Pipeline failed. Please check the logs for details.'
-            // Notification Discord sur échec
-            script {
-                def message = "❌ **Pipeline Failed**\nAn error occurred during the pipeline execution. Check logs for details."
-                sendDiscordNotification(message)
-            }
+            echo "The build or deployment failed."
         }
-    }
-}
-
-def sendDiscordNotification(String message) {
-    // Fonction pour envoyer un message à Discord sans sandbox
-    script {
-        def payload = """{
-            "content": "${message}"
-        }"""
-
-        // Envoie la requête POST à Discord via le webhook
-        bat """curl -X POST -H "Content-Type: application/json" -d '${payload}' ${DISCORD_WEBHOOK_URL}"""
     }
 }
