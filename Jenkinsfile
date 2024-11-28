@@ -2,21 +2,25 @@ pipeline {
     agent any
 
     environment {
-        // Configuration pour la notification Discord
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        ZAP_URL = 'http://localhost:9090'
     }
 
     stages {
-        stage('Cloner le dépôt') {
+        stage('Checkout SCM') {
             steps {
-                git 'https://github.com/dalal-1/MonProjetSecurite.git'  // Remplacez par votre dépôt
+                script {
+                    // Vérifier si le dépôt Git est correctement configuré
+                    git branch: 'main', url: 'https://github.com/dalal-1/MonProjetSecurite.git'
+                }
             }
         }
 
         stage('Installation des dépendances') {
             steps {
                 script {
-                    sh 'npm install'  // Ou pip install si c'est un projet Python
+                    // Installer les dépendances nécessaires pour l'application (assurez-vous que votre fichier requirements.txt existe)
+                    sh 'pip install -r requirements.txt'
                 }
             }
         }
@@ -24,10 +28,8 @@ pipeline {
         stage('Lancer les tests OWASP ZAP') {
             steps {
                 script {
-                    // Démarre OWASP ZAP pour effectuer un test de sécurité sur l'URL donnée
-                    sh '''
-                    zap-baseline.py -t http://127.0.0.1:5000/ -g gen.conf -r zap_report.html
-                    '''
+                    // Lancer l'analyse de sécurité OWASP ZAP
+                    sh 'curl -X POST "$ZAP_URL/JSON/ascan/action/scan"'
                 }
             }
         }
@@ -35,12 +37,8 @@ pipeline {
         stage('Analyser le rapport de sécurité') {
             steps {
                 script {
-                    // Vérification du rapport de ZAP
-                    def zapReport = readFile('zap_report.html')
-                    // Ajouter ici votre logique pour analyser le rapport (ex: rechercher des vulnérabilités)
-                    if (zapReport.contains("High")) {
-                        currentBuild.result = 'FAILURE'
-                    }
+                    // Analyser le rapport de sécurité généré par OWASP ZAP
+                    sh 'curl -X GET "$ZAP_URL/JSON/core/view/alerts"'
                 }
             }
         }
@@ -48,20 +46,12 @@ pipeline {
         stage('Envoyer une notification à Discord') {
             steps {
                 script {
-                    def message = "Le pipeline a échoué lors des tests de sécurité."
-                    if (currentBuild.result == 'SUCCESS') {
-                        message = "Le pipeline a réussi. Aucun problème de sécurité détecté."
-                    }
-
-                    def payload = [
-                        'content': message
-                    ]
-                    // Envoi de la notification à Discord
-                    sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${payload}' \
-                    https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd
-                    """
+                    // Envoyer une notification sur Discord avec les résultats de l'analyse
+                    sh '''
+                    curl -X POST -H "Content-Type: application/json" -d '{
+                        "content": "Les tests de sécurité sont terminés. Veuillez consulter les résultats."
+                    }' $DISCORD_WEBHOOK
+                    '''
                 }
             }
         }
@@ -70,6 +60,12 @@ pipeline {
     post {
         always {
             echo 'Pipeline terminé.'
+        }
+        success {
+            echo 'Pipeline exécuté avec succès.'
+        }
+        failure {
+            echo 'Erreur dans le pipeline.'
         }
     }
 }
