@@ -1,81 +1,39 @@
 pipeline {
     agent any
 
-    environment {
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'  // Votre URL Webhook Discord
+    tools {
+        // Déclare les outils nécessaires ici (si tu en utilises)
     }
 
     stages {
-        stage('Déclenchement du Checkout SCM') {
+        stage('Checkout') {
             steps {
-                checkout scm  // Cloner votre dépôt Git ou autre source de code
+                // Récupère le code depuis le repository
+                checkout scm
             }
         }
-
-        stage('Test Sécurité avec OWASP ZAP') {
+        
+        stage('Dependency Check') {
             steps {
                 script {
-                    echo "Lancement du scan de sécurité OWASP ZAP..."
-
-                    // Utilisation du plugin OWASP ZAP pour exécuter un scan
-                    zapAttack(
-                        apiKey: '',  // Laissez vide si vous n'utilisez pas de clé API
-                        target: 'http://127.0.0.1:5000',  // URL de votre application à tester
-                        zapOptions: [ '-config', 'api.disablekey=true' ]  // Désactive la clé API si nécessaire
-                    )
+                    // Lancer l'analyse avec Dependency-Check sur le répertoire courant
+                    dependencyCheck additionalArguments: '', 
+                                   scanPath: '.', 
+                                   dataDirectory: 'dependency-check-data', 
+                                   failBuildOnCVSS: '7', 
+                                   analysisType: 'SCA', 
+                                   format: 'HTML', 
+                                   outputDirectory: 'dependency-check-report'
                 }
             }
         }
 
-        stage('Envoyer Notification Discord') {
-            steps {
-                script {
-                    echo "Envoi de la notification à Discord..."
-
-                    // Créer la charge utile pour Discord
-                    def payload = '{"content": "Le scan de sécurité OWASP ZAP est terminé avec succès!"}'
-
-                    // Envoi de la notification via Webhook Discord
-                    httpRequest(
-                        url: "${DISCORD_WEBHOOK_URL}",
-                        httpMode: 'POST',
-                        contentType: 'APPLICATION_JSON',
-                        requestBody: payload
-                    )
-                }
-            }
-        }
+        // Ajouter ici d'autres étapes si nécessaire, comme tests ou déploiement
     }
 
     post {
-        success {
-            echo 'Le pipeline a réussi.'
-            
-            // Notification en cas de succès
-            script {
-                def successPayload = '{"content": "Le scan OWASP ZAP a été effectué avec succès!"}'
-                httpRequest(
-                    url: "${DISCORD_WEBHOOK_URL}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: successPayload
-                )
-            }
-        }
-
-        failure {
-            echo 'Le pipeline a échoué.'
-            
-            // Notification en cas d'échec
-            script {
-                def failurePayload = '{"content": "Le scan OWASP ZAP a échoué!"}'
-                httpRequest(
-                    url: "${DISCORD_WEBHOOK_URL}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: failurePayload
-                )
-            }
+        always {
+            // Actions à effectuer après chaque build (si besoin)
         }
     }
 }
