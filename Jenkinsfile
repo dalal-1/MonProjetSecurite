@@ -43,20 +43,20 @@ pipeline {
             }
         }
     }
+}
 
-    // Function to send a notification to Discord
-    def sendDiscordNotification(String message) {
-        def body = """
-        {
-            "content": "$message"
-        }
-        """
-        def response = httpRequest(
-            acceptType: 'APPLICATION_JSON',
-            contentType: 'APPLICATION_JSON',
-            httpMode: 'POST',
-            url: env.DISCORD_WEBHOOK_URL,
-            requestBody: body
-        )
+// Function to send a notification to Discord
+def sendDiscordNotification(String message) {
+    def body = """
+    {
+        "content": "$message"
     }
+    """
+    def response = httpRequest(
+        acceptType: 'APPLICATION_JSON',
+        contentType: 'APPLICATION_JSON',
+        httpMode: 'POST',
+        url: env.DISCORD_WEBHOOK_URL,
+        requestBody: body
+    )
 }
