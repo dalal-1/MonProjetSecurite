@@ -1,71 +1,62 @@
 pipeline {
     agent any
 
-    environment {
-        // Codacy Project Token
-        CODACY_PROJECT_TOKEN = '01db00b69eac4393a4f5b8f081702953'
-        // Webhook URL for Discord notifications
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                // Retrieve the code from GitHub
+                // Vérifie que les sources du projet sont bien récupérées
                 checkout scm
             }
         }
 
         stage('Build') {
             steps {
-                echo 'Building the project...'
-                // Add the steps necessary to build your project here.
-                // For example, if it's a Maven project: sh 'mvn clean install'
+                echo "Building the project..."
+                // Place ici les étapes nécessaires pour la compilation ou la construction du projet
+                // Par exemple, si tu utilises npm ou Maven :
+                // bat 'npm install'  // Pour un projet Node.js
+                // bat 'mvn clean install'  // Pour un projet Java/Maven
             }
         }
 
         stage('Codacy Analysis') {
             steps {
-                script {
-                    // Install Codacy coverage tool
-                    sh 'curl -sS https://coverage.codacy.com/get.sh | bash'
-                    
-                    // Upload the coverage report to Codacy
-                    sh """
-                    curl -X POST -H 'Content-Type: application/json' -d '{
-                        "token": "${env.CODACY_PROJECT_TOKEN}",
-                        "branch": "main"
-                    }' https://api.codacy.com/2.0/coverage
-                    """
-                }
+                echo "Performing Codacy analysis..."
+                // Remplace ceci par les étapes spécifiques pour analyser ton projet avec Codacy
+                // Exemple d'intégration Codacy avec GitHub et Jenkins :
+                // bat 'curl -s https://www.codacy.com/project/{YOUR_PROJECT_TOKEN}/coverage-reports?token={YOUR_TOKEN}'
+                // Assure-toi que tu as configuré l'outil Codacy ou un équivalent pour ton projet
             }
         }
 
         stage('Notify Discord') {
             steps {
-                script {
-                    // Check the status of the build
-                    def status = currentBuild.currentResult
-                    def message = status == 'SUCCESS' ? "The build was successful!" : "The build failed."
+                echo "Notifying Discord..."
+                // Remplace cette section par la logique d'intégration de Discord
+                // Tu peux envoyer un message Discord via webhook comme ceci :
+                // bat 'curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"Build complete\"}" https://discord.com/api/webhooks/{webhook_id}'
+            }
+        }
 
-                    // Send a Discord notification with the build status
-                    sh """
-                    curl -H "Content-Type: application/json" \
-                         -X POST \
-                         -d '{"content": "Pipeline Status: ${message}"}' \
-                         ${env.DISCORD_WEBHOOK_URL}
-                    """
-                }
+        stage('Deployment') {
+            steps {
+                echo "Deploying the application..."
+                // Cette section est dédiée à l'automatisation du déploiement
+                // Si tu utilises des outils comme Ansible ou Docker, intègre ici les commandes correspondantes
+                // Exemple avec Docker (assure-toi d'avoir Docker configuré sur la machine) :
+                // bat 'docker-compose up -d'
+                // Si tu as des scripts de déploiement spécifiques, appelle-les ici
             }
         }
     }
 
     post {
         success {
-            echo 'Build completed successfully!'
+            echo "The build and deployment were successful!"
         }
+
         failure {
-            echo 'Build failed. Check the logs for errors.'
+            echo "The build or deployment failed."
         }
     }
 }
