@@ -34,7 +34,7 @@ pipeline {
 
                     // Créer la charge utile pour Discord
                     def payload = '{"content": "Le scan de sécurité OWASP ZAP est terminé avec succès!"}'
-                    
+
                     // Envoi de la notification via Webhook Discord
                     httpRequest(
                         url: "${DISCORD_WEBHOOK_URL}",
@@ -48,6 +48,21 @@ pipeline {
     }
 
     post {
+        success {
+            echo 'Le pipeline a réussi.'
+            
+            // Notification en cas de succès
+            script {
+                def successPayload = '{"content": "Le scan OWASP ZAP a été effectué avec succès!"}'
+                httpRequest(
+                    url: "${DISCORD_WEBHOOK_URL}",
+                    httpMode: 'POST',
+                    contentType: 'APPLICATION_JSON',
+                    requestBody: successPayload
+                )
+            }
+        }
+
         failure {
             echo 'Le pipeline a échoué.'
             
