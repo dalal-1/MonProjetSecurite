@@ -2,68 +2,61 @@ pipeline {
     agent any
 
     environment {
-        NMAP_PATH = "C:\\Program Files (x86)\\Nmap" // Path to Nmap on your Windows machine
-        TARGET_IP = "127.0.0.1" // Target Flask app IP address
-        TARGET_PORT = "5000" // Target Flask app port
+        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
                 checkout scm
+                script {
+                    sendDiscordNotification('Checkout completed successfully!')
+                }
             }
         }
 
         stage('Check Nmap') {
             steps {
-                bat 'echo C:\\Windows\\System32;C:\\Program Files\\Git\\bin;C:\\Program Files (x86)\\Nmap'
+                bat 'echo %PATH%'
                 bat 'nmap --version'
+                script {
+                    sendDiscordNotification('Nmap is installed and version verified.')
+                }
             }
         }
 
         stage('Vulnerability Scan') {
             steps {
+                echo 'Running Nmap Vulnerability Scan on HTTP service...'
+                bat 'nmap -p 5000 --script=http-vuln* --open --reason 127.0.0.1'
                 script {
-                    // Perform a simple vulnerability scan on the Flask application
-                    def scanResult = bat(script: "nmap -p ${TARGET_PORT} --script vuln ${TARGET_IP}", returnStdout: true).trim()
-
-                    // Check if vulnerabilities are found
-                    def scanDetails = scanResult.contains("Vulnerabilities found") ? scanResult : "No vulnerabilities found during the scan."
-                    
-                    // Send the scan results to Discord webhook
-                    def message = """
-                    {
-                        "content": "Vulnerability scan completed for ${TARGET_IP}:${TARGET_PORT}. Here are the details:\n${scanDetails}"
-                    }
-                    """
-                    // Post the message to Discord
-                    httpRequest(
-                        url: 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd',
-                        httpMode: 'POST',
-                        contentType: 'APPLICATION_JSON',
-                        requestBody: message
-                    )
-                }
-            }
-        }
-
-        stage('Post Actions') {
-            steps {
-                script {
-                    // Notify that the Jenkins job has completed
-                    def completionMessage = """
-                    {
-                        "content": "The Jenkins pipeline has completed. Check the scan results above."
-                    }
-                    """
-                    httpRequest(
-                        url: 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd',
-                        httpMode: 'POST',
-                        contentType: 'APPLICATION_JSON',
-                        requestBody: completionMessage
-                    )
+                    sendDiscordNotification('Nmap vulnerability scan completed for HTTP service on port 5000.')
                 }
             }
         }
     }
+
+    post {
+        always {
+            script {
+                sendDiscordNotification('Pipeline execution finished.')
+            }
+        }
+    }
+}
+
+// Function to send a notification to Discord
+def sendDiscordNotification(String message) {
+    def body = """
+    {
+        "content": "$message"
+    }
+    """
+    def response = httpRequest(
+        acceptType: 'APPLICATION_JSON',
+        contentType: 'APPLICATION_JSON',
+        httpMode: 'POST',
+        url: env.DISCORD_WEBHOOK_URL,
+        requestBody: body
+    )
 }
