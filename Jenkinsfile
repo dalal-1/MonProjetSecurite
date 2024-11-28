@@ -32,9 +32,21 @@ pipeline {
         stage('Notify Discord') {
             steps {
                 echo "Notifying Discord..."
-                // Remplace cette section par la logique d'intégration de Discord
-                // Tu peux envoyer un message Discord via webhook comme ceci :
-                // bat 'curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"Build complete\"}" https://discord.com/api/webhooks/{webhook_id}'
+                // Logic to notify Discord via Webhook
+                script {
+                    def discordWebhookUrl = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+                    def message = "Le pipeline Jenkins a été exécuté. Statut: ${currentBuild.currentResult}"
+                    def payload = """
+                    {
+                        "content": "${message}"
+                    }
+                    """
+                    
+                    // Utilisation de PowerShell pour envoyer la requête HTTP POST
+                    bat """
+                    powershell -Command "\$headers = @{ 'Content-Type' = 'application/json' }; \$body = '${payload}'; Invoke-RestMethod -Uri '${discordWebhookUrl}' -Method Post -Headers \$headers -Body \$body"
+                    """
+                }
             }
         }
 
