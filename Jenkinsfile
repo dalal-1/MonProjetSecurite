@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         NMAP_PATH = "C:\\Program Files (x86)\\Nmap" // Path to Nmap on your Windows machine
-        TARGET_URL = "http://127.0.0.1:5000/" // Target Flask app URL
+        TARGET_IP = "127.0.0.1" // Target Flask app IP address
+        TARGET_PORT = "5000" // Target Flask app port
     }
 
     stages {
@@ -24,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Perform a simple vulnerability scan on the Flask application
-                    def scanResult = bat(script: "nmap -p 5000 --script vuln ${TARGET_URL}", returnStdout: true).trim()
+                    def scanResult = bat(script: "nmap -p ${TARGET_PORT} --script vuln ${TARGET_IP}", returnStdout: true).trim()
 
                     // Check if vulnerabilities are found
                     def scanDetails = scanResult.contains("Vulnerabilities found") ? scanResult : "No vulnerabilities found during the scan."
@@ -32,7 +33,7 @@ pipeline {
                     // Send the scan results to Discord webhook
                     def message = """
                     {
-                        "content": "Vulnerability scan completed for ${TARGET_URL}. Here are the details:\n${scanDetails}"
+                        "content": "Vulnerability scan completed for ${TARGET_IP}:${TARGET_PORT}. Here are the details:\n${scanDetails}"
                     }
                     """
                     // Post the message to Discord
