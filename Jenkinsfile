@@ -1,9 +1,9 @@
 pipeline {
     agent any
     stages {
-        stage('PowerShell Test') {
+        stage('Test cmd') {
             steps {
-                bat 'powershell.exe -Command "Write-Host \'Hello from PowerShell!\'"'
+                bat 'echo Hello, world!'
             }
         }
     }
