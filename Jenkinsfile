@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        // Define environment variables (adjust the paths if needed)
+        PATH = "${env.PATH};C:/Program Files (x86)/Nmap;C:/Users/ASUS/AppData/Local/Programs/Python/Python313/;C:/Users/ASUS/AppData/Local/Programs/Python/Python313/Scripts/"
     }
 
     stages {
-        stage('Declarative: Checkout SCM') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
@@ -15,8 +16,7 @@ pipeline {
         stage('Show Current Directory') {
             steps {
                 script {
-                    // Affiche le répertoire courant
-                    bat 'echo %cd%' // Commande adaptée pour Windows
+                    echo "Current workspace: ${env.WORKSPACE}"
                 }
             }
         }
@@ -24,9 +24,8 @@ pipeline {
         stage('Check Nmap') {
             steps {
                 script {
-                    // Vérifier si Nmap est bien installé et dans le PATH
-                    bat 'echo %PATH%' // Afficher les chemins pour vérifier si Nmap y est
-                    bat 'nmap --version' // Vérifier la version de Nmap
+                    echo "Checking Nmap version..."
+                    bat 'nmap --version'
                 }
             }
         }
@@ -34,8 +33,10 @@ pipeline {
         stage('Install Bandit') {
             steps {
                 script {
-                    echo 'Installing Bandit for Python security analysis...'
-                    bat 'pip install bandit' // Installer Bandit via pip
+                    echo "Installing Bandit for Python security analysis..."
+                    // Ensure pip is updated first
+                    bat 'python -m pip install --upgrade pip'
+                    bat 'pip install bandit'
                 }
             }
         }
@@ -43,79 +44,55 @@ pipeline {
         stage('Run Bandit Analysis') {
             steps {
                 script {
-                    echo 'Running Bandit analysis on Python code...'
-                    // Commande pour analyser le code Python avec Bandit
+                    echo "Running Bandit analysis on Python code..."
+                    // Run Bandit and output the result in JSON format
                     bat 'bandit -r . -f json -o bandit-report.json'
-
-                    // Lire le fichier de rapport JSON généré par Bandit
-                    def report = readFile('bandit-report.json')
-                    echo "Bandit analysis results: $report"
-
-                    // Création du payload JSON pour la notification Discord
-                    def body = """
-                    {
-                        "content": "Bandit security analysis completed. Results:\n$report"
+                    // Ensure the report file is generated
+                    script {
+                        def report = readFile('bandit-report.json')
+                        echo "Bandit Report Content: ${report}"
                     }
-                    """
-                    echo "Sending message: $body"
-
-                    // Envoi du rapport de sécurité à Discord
-                    def response = httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        url: env.DISCORD_WEBHOOK_URL,
-                        requestBody: body
-                    )
                 }
             }
         }
 
         stage('Vulnerability Scan') {
+            when {
+                expression {
+                    return fileExists('bandit-report.json')
+                }
+            }
             steps {
                 script {
-                    echo 'Running Nmap Vulnerability Scan on HTTP service...'
-                    // Placeholder pour la commande Nmap réelle
-                    def nmapResults = 'Scan results here'
-
-                    // Création du payload JSON pour la notification Discord
-                    def body = """
-                    {
-                        "content": "Nmap vulnerability scan completed for HTTP service on port 5000."
-                    }
-                    """
-                    echo "Sending message: $body"
-
-                    // Envoi de la requête HTTP à Discord
-                    def response = httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        url: env.DISCORD_WEBHOOK_URL,
-                        requestBody: body
-                    )
+                    echo "Running vulnerability scan..."
+                    // Add your vulnerability scan logic here (Nmap, OWASP ZAP, etc.)
+                    bat 'nmap -sV -T4 -oN nmap-report.txt localhost'
                 }
             }
         }
 
-        stage('Declarative: Post Actions') {
+        stage('Post Actions') {
             steps {
                 script {
-                    def body = """
-                    {
-                        "content": "Pipeline completed successfully!"
-                    }
-                    """
-                    // Envoi d'une notification de fin de pipeline à Discord
-                    def response = httpRequest(
-                        acceptType: 'APPLICATION_JSON',
-                        contentType: 'APPLICATION_JSON',
-                        httpMode: 'POST',
-                        url: env.DISCORD_WEBHOOK_URL,
-                        requestBody: body
-                    )
+                    echo "Performing post-actions..."
+                    // Add any necessary cleanup or notifications
+                    // For example, notify if the report was generated
+                    echo "Build completed with Bandit report: bandit-report.json"
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            // Always clean up after the build
+            cleanWs()
+        }
+        success {
+            echo "Pipeline executed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs for more details."
         }
     }
 }
