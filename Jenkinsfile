@@ -3,10 +3,7 @@ pipeline {
     stages {
         stage('PowerShell Test') {
             steps {
-                script {
-                    // Exécuter un script PowerShell directement dans Jenkins
-                    bat 'powershell.exe -Command "Write-Host \'Hello from PowerShell!\'"'
-                }
+                bat 'powershell.exe -Command "Write-Host \'Hello from PowerShell!\'"'
             }
         }
     }
