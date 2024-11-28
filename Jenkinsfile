@@ -1,26 +1,29 @@
 pipeline {
     agent any
-
+    
     environment {
+        // URL de votre serveur Discord pour les notifications
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
-        TARGET_URL = 'http://127.0.0.1:5000/'  // URL de ton application Flask
+        TARGET_URL = 'http://127.0.0.1:5000' // URL de votre application Flask
     }
-
+    
     stages {
-        stage('Install Dependencies') {
+        stage('Start ZAP in Daemon Mode') {
             steps {
                 script {
-                    // Vérifier si Nmap est installé (si nécessaire)
-                    sh 'nmap --version'
+                    // Lancer ZAP en mode daemon avec un port spécifique
+                    bat "start /B C:\\Program Files\\ZAP\\Zed Attack Proxy\\zap.bat -daemon -port 9090"
+                    sleep(10) // Attendre que ZAP démarre
                 }
             }
         }
-
-        stage('Run Nmap Security Test') {
+        
+        stage('Run ZAP Security Scan') {
             steps {
                 script {
-                    // Exécuter un scan Nmap sur l'URL cible
-                    sh "nmap -sV ${TARGET_URL} -oX nmap_report.xml"
+                    // Utiliser l'API de ZAP pour effectuer un scan sur l'application locale
+                    bat "curl -X GET 'http://localhost:9090/JSON/ascan/action/scan/?url=${TARGET_URL}'"
+                    sleep(60) // Attendre que le scan soit effectué
                 }
             }
         }
@@ -28,27 +31,27 @@ pipeline {
         stage('Send Discord Notification') {
             steps {
                 script {
-                    // Message de notification à envoyer
-                    def message = "Security test completed for ${TARGET_URL}.\nNmap Report saved at:\n${pwd()}/nmap_report.xml"
-                    // Préparer le payload pour Discord
-                    def payload = """
-                    {
-                        "content": "${message}"
-                    }
-                    """
-                    // Envoi de la notification à Discord via webhook
-                    sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${payload}' ${DISCORD_WEBHOOK_URL}
-                    """
+                    // Préparer le message JSON pour Discord
+                    def message = """{
+                        "content": "Scan OWASP ZAP terminé pour l'application Flask : ${TARGET_URL}"
+                    }"""
+                    
+                    // Envoyer une notification à Discord via le webhook
+                    httpRequest(
+                        url: "${DISCORD_WEBHOOK_URL}",
+                        httpMode: 'POST',
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: message
+                    )
                 }
             }
         }
     }
-
+    
     post {
         always {
-            echo "Pipeline finished"
+            // Fermer ZAP après le scan
+            bat "taskkill /F /IM zap.exe"
         }
     }
 }
