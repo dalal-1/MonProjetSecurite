@@ -2,14 +2,21 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables (adjust the paths if needed)
-        PATH = "${env.PATH};C:/Program Files (x86)/Nmap;C:/Users/ASUS/AppData/Local/Programs/Python/Python313/;C:/Users/ASUS/AppData/Local/Programs/Python/Python313/Scripts/"
+        // Add necessary environment variables, like paths to executables
+        PATH = "C:\\Program Files\\Git\\bin;C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\Job_2_Pipeline\\nmap;C:\\Users\\asus\\AppData\\Local\\Programs\\Python\\Python313\\Scripts" // Adjust paths if needed
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                checkout scm
+                script {
+                    try {
+                        echo "Checking out the repository..."
+                        checkout scm
+                    } catch (Exception e) {
+                        error "Failed to checkout repository: ${e.getMessage()}"
+                    }
+                }
             }
         }
 
@@ -24,8 +31,12 @@ pipeline {
         stage('Check Nmap') {
             steps {
                 script {
-                    echo "Checking Nmap version..."
-                    bat 'nmap --version'
+                    try {
+                        echo "Checking Nmap version..."
+                        bat 'nmap --version'
+                    } catch (Exception e) {
+                        error "Nmap version check failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
@@ -33,10 +44,13 @@ pipeline {
         stage('Install Bandit') {
             steps {
                 script {
-                    echo "Installing Bandit for Python security analysis..."
-                    // Ensure pip is updated first
-                    bat 'python -m pip install --upgrade pip'
-                    bat 'pip install bandit'
+                    try {
+                        echo "Installing Bandit for Python security analysis..."
+                        bat 'python -m pip install --upgrade pip'
+                        bat 'pip install bandit'
+                    } catch (Exception e) {
+                        error "Bandit installation failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
@@ -44,29 +58,26 @@ pipeline {
         stage('Run Bandit Analysis') {
             steps {
                 script {
-                    echo "Running Bandit analysis on Python code..."
-                    // Run Bandit and output the result in JSON format
-                    bat 'bandit -r . -f json -o bandit-report.json'
-                    // Ensure the report file is generated
-                    script {
-                        def report = readFile('bandit-report.json')
-                        echo "Bandit Report Content: ${report}"
+                    try {
+                        echo "Running Bandit analysis on Python code..."
+                        bat 'bandit -r . -f json -o bandit-report.json'
+                    } catch (Exception e) {
+                        error "Bandit analysis failed: ${e.getMessage()}"
                     }
                 }
             }
         }
 
         stage('Vulnerability Scan') {
-            when {
-                expression {
-                    return fileExists('bandit-report.json')
-                }
-            }
             steps {
                 script {
-                    echo "Running vulnerability scan..."
-                    // Add your vulnerability scan logic here (Nmap, OWASP ZAP, etc.)
-                    bat 'nmap -sV -T4 -oN nmap-report.txt localhost'
+                    try {
+                        echo "Starting vulnerability scan..."
+                        // Add your vulnerability scan logic here
+                        // Ensure that the necessary tools are installed and paths are set
+                    } catch (Exception e) {
+                        error "Vulnerability scan failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
@@ -74,10 +85,12 @@ pipeline {
         stage('Post Actions') {
             steps {
                 script {
-                    echo "Performing post-actions..."
-                    // Add any necessary cleanup or notifications
-                    // For example, notify if the report was generated
-                    echo "Build completed with Bandit report: bandit-report.json"
+                    try {
+                        echo "Performing post actions..."
+                        // Your post actions like sending reports, notifications, etc.
+                    } catch (Exception e) {
+                        error "Post actions failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
@@ -85,12 +98,13 @@ pipeline {
 
     post {
         always {
-            // Always clean up after the build
             cleanWs()
         }
+
         success {
-            echo "Pipeline executed successfully!"
+            echo "Pipeline completed successfully!"
         }
+
         failure {
             echo "Pipeline failed. Please check the logs for more details."
         }
