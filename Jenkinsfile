@@ -11,26 +11,22 @@ pipeline {
                 checkout scm
             }
         }
+
         stage('Show Current Directory') {
             steps {
                 script {
-                sh 'pwd'  // Affiche le répertoire courant
-        }
-    }
-}
-
-
-        stage('Checkout') {
-            steps {
-                checkout scm
+                    // Affiche le répertoire courant
+                    bat 'echo %cd%' // Commande adaptée pour Windows
+                }
             }
         }
 
         stage('Check Nmap') {
             steps {
                 script {
-                    bat 'echo C:\\Windows\\System32;C:\\Program Files\\Git\\bin;C:\\Program Files (x86)\\Nmap'
-                    bat 'nmap --version'
+                    // Vérifier si Nmap est bien installé et dans le PATH
+                    bat 'echo %PATH%' // Afficher les chemins pour vérifier si Nmap y est
+                    bat 'nmap --version' // Vérifier la version de Nmap
                 }
             }
         }
@@ -39,10 +35,10 @@ pipeline {
             steps {
                 script {
                     echo 'Running Nmap Vulnerability Scan on HTTP service...'
-                    // Placeholder for actual Nmap scan command
+                    // Placeholder pour la commande Nmap réelle
                     def nmapResults = 'Scan results here'
 
-                    // Creating JSON payload for Discord notification
+                    // Création du payload JSON pour la notification Discord
                     def body = """
                     {
                         "content": "Nmap vulnerability scan completed for HTTP service on port 5000."
@@ -50,7 +46,7 @@ pipeline {
                     """
                     echo "Sending message: $body"
 
-                    // Sending HTTP request to Discord
+                    // Envoi de la requête HTTP à Discord
                     def response = httpRequest(
                         acceptType: 'APPLICATION_JSON',
                         contentType: 'APPLICATION_JSON',
@@ -70,7 +66,7 @@ pipeline {
                         "content": "Pipeline completed successfully!"
                     }
                     """
-                    // Sending a post-pipeline completion notification to Discord
+                    // Envoi d'une notification de fin de pipeline à Discord
                     def response = httpRequest(
                         acceptType: 'APPLICATION_JSON',
                         contentType: 'APPLICATION_JSON',
@@ -83,4 +79,3 @@ pipeline {
         }
     }
 }
-
