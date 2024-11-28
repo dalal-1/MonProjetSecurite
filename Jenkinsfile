@@ -1,79 +1,78 @@
 pipeline {
     agent any
-    
     environment {
-        // Définir l'environnement avec les clés et URL
-        DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1311140096829030401/nGEZ9k6p6JD8fH7ijln8t8Isftrd77PO385KvNadsXM_xjw9k8Wtj13kSkla1jF2YzrV'
-        CODACY_API_TOKEN = '01db00b69eac4393a4f5b8f081702953'
+        // Variables d'environnement adaptées à votre machine virtuelle
+        APPLICATION_PATH = "/home/delaila/MonProjetSecurite"  // Chemin vers votre projet sur la machine virtuelle
+        DEPLOYMENT_SCRIPT = "deploy.yml"  // Playbook Ansible pour déployer l'application
+        TEST_SCRIPT = "run_tests.sh"  // Script de test (à adapter si nécessaire)
+        SECURITY_CHECK_SCRIPT = "security_check.sh"  // Script de vérification de sécurité
+        GITHUB_REPO = "https://github.com/your-repository.git"  // Remplacez par l'URL de votre dépôt GitHub
+        BRANCH = "main"  // Branche du dépôt GitHub que vous souhaitez utiliser
+        ANSIBLE_HOSTS = "/home/delaila/MonProjetSecurite/hosts.ini"  // Fichier d'inventaire Ansible
+        JENKINS_HOME = "/var/jenkins_home"  // Emplacement de Jenkins sur Ubuntu (si nécessaire)
     }
-    
     stages {
-        stage('Cloner le dépôt Git') {
+        stage('Checkout') {
             steps {
-                // Cloner le dépôt Git en spécifiant la branche 'main'
-                git branch: 'main', url: 'https://github.com/dalal-1/MonProjetSecurite.git'
+                // Cloner le dépôt GitHub sur la machine virtuelle
+                git branch: "${BRANCH}", url: "${GITHUB_REPO}"
             }
         }
         
-        stage('Exécution des tests de sécurité') {
+        stage('Build') {
             steps {
-                // Exécuter Bandit pour analyser la sécurité de l'application Python
-                sh 'python -m bandit -r app.py -f html -o bandit-report.html'
-                
-                // Exécuter SonarQube pour analyser le code
-                sh 'mvn sonar:sonar -Dsonar.projectKey=MonProjetSecurite -Dsonar.host.url=http://localhost:9000 -Dsonar.login=your-sonar-token'
-
-                // Exécuter OWASP ZAP pour tester la sécurité de l'application
-                sh 'zap-cli quick-scan --self-contained --spider --active-scan http://localhost:5000'
-
-                // Envoi des rapports à Discord
                 script {
-                    def message = "Tests de sécurité terminés. Les résultats sont disponibles dans les rapports."
-                    sh "curl -X POST -H 'Content-Type: application/json' -d '{\"content\": \"${message}\"}' ${DISCORD_WEBHOOK}"
+                    echo 'Building the application...'
+                    // Construction de l'application (ajustez le script ou la commande en fonction de vos besoins)
+                    sh 'python3 -m venv venv' // Créer un environnement virtuel si nécessaire
+                    sh '. venv/bin/activate'  // Activer l'environnement virtuel
+                    sh 'pip install -r requirements.txt'  // Installer les dépendances
                 }
             }
         }
         
-        stage('Déployer l’application avec Ansible') {
+        stage('Deploy') {
             steps {
-                // Se connecter via SSH à la machine virtuelle et exécuter le playbook Ansible
-                sshagent(['delaila']) {
-                    sh 'ansible-playbook -i /home/delaila/MonProjetSecurite/inventory /home/delaila/MonProjetSecurite/deploy.yml'
+                script {
+                    echo 'Deploying the application...'
+                    // Lancer le playbook Ansible pour déployer l'application
+                    sh "ansible-playbook -i ${ANSIBLE_HOSTS} ${DEPLOYMENT_SCRIPT}"
                 }
             }
         }
         
-        stage('Codacy Verification') {
+        stage('Test') {
             steps {
                 script {
-                    // Exécuter Codacy pour la vérification de la qualité du code
-                    def response = httpRequest(
-                        url: "https://api.codacy.com/2.0/project/$CODACY_API_TOKEN/verify",
-                        httpMode: 'POST',
-                        contentType: 'APPLICATION_JSON'
-                    )
-                    echo "Codacy Response: ${response}"
+                    echo 'Running tests...'
+                    // Exécuter les tests après le déploiement
+                    sh "./${TEST_SCRIPT}"  // Exécution de votre script de tests (assurez-vous qu'il est exécutable)
                 }
             }
         }
         
-        stage('Notification Discord') {
+        stage('Security Check') {
             steps {
                 script {
-                    // Envoyer une notification à Discord après le déploiement
-                    def message = "Déploiement terminé avec succès pour l'application sécurisée."
-                    sh "curl -X POST -H 'Content-Type: application/json' -d '{\"content\": \"${message}\"}' ${DISCORD_WEBHOOK}"
+                    echo 'Running security checks...'
+                    // Exécuter les vérifications de sécurité automatisées
+                    sh "./${SECURITY_CHECK_SCRIPT}"  // Exécution du script de vérification de sécurité
                 }
             }
         }
     }
     
     post {
+        always {
+            echo 'Cleaning up...'
+            // Nettoyage après exécution
+            sh 'rm -rf venv'  // Exemple de nettoyage (à adapter selon vos besoins)
+        }
         success {
-            echo "Le pipeline s'est exécuté avec succès."
+            echo 'Deployment and testing completed successfully!'
         }
         failure {
-            echo "Le pipeline a échoué."
+            echo 'There was an error during the deployment process.'
         }
     }
 }
