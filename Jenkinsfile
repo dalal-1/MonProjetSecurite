@@ -11,6 +11,14 @@ pipeline {
                 checkout scm
             }
         }
+        stage('Show Current Directory') {
+            steps {
+                script {
+                sh 'pwd'  // Affiche le répertoire courant
+        }
+    }
+}
+
 
         stage('Checkout') {
             steps {
