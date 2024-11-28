@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        // Déclare les outils nécessaires ici (si tu en utilises)
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -26,14 +22,6 @@ pipeline {
                                    outputDirectory: 'dependency-check-report'
                 }
             }
-        }
-
-        // Ajouter ici d'autres étapes si nécessaire, comme tests ou déploiement
-    }
-
-    post {
-        always {
-            // Actions à effectuer après chaque build (si besoin)
         }
     }
 }
