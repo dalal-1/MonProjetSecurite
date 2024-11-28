@@ -37,7 +37,7 @@ pipeline {
                     // Creating JSON payload for Discord notification
                     def body = """
                     {
-                        "content": "Nmap vulnerability scan completed for HTTP service on port 5000. Scan results: $nmapResults"
+                        "content": "Nmap vulnerability scan completed for HTTP service on port 5000."
                     }
                     """
                     echo "Sending message: $body"
