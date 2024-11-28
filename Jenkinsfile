@@ -18,7 +18,7 @@ pipeline {
         stage('Exécution des tests de sécurité') {
             steps {
                 // Exécuter Bandit pour analyser la sécurité de l'application Python
-                sh 'bandit -r app.py -f html -o bandit-report.html'
+                sh 'python -m bandit -r app.py -f html -o bandit-report.html'
                 
                 // Exécuter SonarQube pour analyser le code
                 sh 'mvn sonar:sonar -Dsonar.projectKey=MonProjetSecurite -Dsonar.host.url=http://localhost:9000 -Dsonar.login=your-sonar-token'
