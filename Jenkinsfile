@@ -77,13 +77,13 @@ pipeline {
 }
 
 def sendDiscordNotification(String message) {
-    // Fonction pour envoyer un message à Discord
-    def payload = """{
-        "content": "${message}"
-    }"""
-    
-    // Envoie la requête POST à Discord via le webhook
-    sh """
-        curl -X POST -H "Content-Type: application/json" -d '${payload}' ${DISCORD_WEBHOOK_URL}
-    """
+    // Fonction pour envoyer un message à Discord sans sandbox
+    script {
+        def payload = """{
+            "content": "${message}"
+        }"""
+
+        // Envoie la requête POST à Discord via le webhook
+        bat """curl -X POST -H "Content-Type: application/json" -d '${payload}' ${DISCORD_WEBHOOK_URL}"""
+    }
 }
