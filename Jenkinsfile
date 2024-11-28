@@ -1,51 +1,57 @@
 pipeline {
     agent any
+
     environment {
-        // Définir l'URL du webhook Discord et le message
-        discordWebhookUrl = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
-        payload = '{"content": "Test du webhook Discord"}'
+        PATH = "${tool 'Git'}:/usr/local/bin:/usr/bin:/bin:C:\\Program Files\\Jenkins\\bin"
     }
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
+        
         stage('Build') {
             steps {
                 echo 'Building the project...'
+                // Ajoutez ici vos étapes de build, comme la compilation ou l'installation des dépendances
             }
         }
+
         stage('Codacy Analysis') {
             steps {
                 echo 'Performing Codacy analysis...'
+                // Ajoutez ici vos étapes d'analyse avec Codacy si nécessaire
             }
         }
+
         stage('Notify Discord') {
             steps {
                 echo 'Notifying Discord...'
-                script {
-                    // Utiliser PowerShell pour envoyer la notification à Discord
-                    powershell '''
-                    $headers = @{ 'Content-Type' = 'application/json' }
-                    $body = '${payload}'
-                    Invoke-RestMethod -Uri '${discordWebhookUrl}' -Method Post -Headers $headers -Body $body
-                    '''
-                }
+                // Ajoutez ici vos étapes pour notifier Discord
             }
         }
+
+        stage('Powershell Test') {
+            steps {
+                echo 'Running PowerShell script...'
+                // Exécuter le script PowerShell avec le chemin absolu
+                powershell '"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "echo Hello World"'
+            }
+        }
+
         stage('Deployment') {
             steps {
-                echo 'Deploying the project...'
+                echo 'Deploying application...'
+                // Ajoutez ici vos étapes de déploiement
             }
         }
     }
+
     post {
         failure {
             echo 'The build or deployment failed.'
-        }
-        success {
-            echo 'The build or deployment succeeded.'
         }
     }
 }
