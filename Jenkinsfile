@@ -1,9 +1,11 @@
 pipeline {
     agent any
     environment {
-        // Utilisation de variables d'environnement Jenkins sécurisées pour éviter l'exposition des tokens
-        DISCORD_WEBHOOK_URL_PIPELINE = credentials('discord-webhook-url')  // Assurez-vous d'ajouter 'discord-webhook-url' dans Jenkins secrets
-        CODACY_TOKEN = credentials('codacy-token')  // Assurez-vous d'ajouter 'codacy-token' dans Jenkins secrets
+        // URL Webhook Discord pour notifications du pipeline
+        DISCORD_WEBHOOK_URL_PIPELINE = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        
+        // Token Codacy pour l'analyse de sécurité et de qualité du code
+        CODACY_TOKEN = '01db00b69eac4393a4f5b8f081702953'
     }
     stages {
         stage('Checkout') {
@@ -12,13 +14,12 @@ pipeline {
                 checkout scm
             }
         }
-
+        
         stage('Build') {
             steps {
                 echo 'Building the application...'
                 script {
                     try {
-                        // Commande de build, à remplacer par ta commande réelle si ce n'est pas Maven
                         sh 'mvn clean install -DskipTests'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -33,7 +34,6 @@ pipeline {
                 echo 'Running unit tests...'
                 script {
                     try {
-                        // Lancer les tests unitaires
                         sh 'mvn test'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -48,7 +48,6 @@ pipeline {
                 echo 'Running security analysis using Codacy...'
                 script {
                     try {
-                        // Lancer l'analyse Codacy
                         sh """
                         curl -X POST \
                             -H "Authorization: token ${CODACY_TOKEN}" \
@@ -68,7 +67,6 @@ pipeline {
                 echo 'Deploying the application to production...'
                 script {
                     try {
-                        // Déploiement avec Docker ou Kubernetes, ajuster la commande en fonction de votre configuration
                         sh 'docker-compose up -d'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -83,7 +81,6 @@ pipeline {
         success {
             echo 'Pipeline succeeded.'
             script {
-                // Notification Discord pour une exécution réussie
                 def payload = [
                     content: "🎉 Le pipeline Jenkins a **réussi** avec succès pour MonProjetSecurite!"
                 ]
@@ -93,11 +90,10 @@ pipeline {
                 """
             }
         }
-
+        
         failure {
             echo 'Pipeline failed.'
             script {
-                // Notification Discord pour une exécution échouée
                 def payload = [
                     content: "🚨 Le pipeline Jenkins a **échoué** pour MonProjetSecurite. Veuillez vérifier les erreurs dans les logs."
                 ]
@@ -110,8 +106,9 @@ pipeline {
 
         always {
             echo 'Cleaning up workspace...'
-            // Nettoyage de l'espace de travail après l'exécution du pipeline
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
     }
 }
