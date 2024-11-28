@@ -28,9 +28,11 @@ pipeline {
         stage('Vulnerability Scan') {
             steps {
                 echo 'Running Nmap Vulnerability Scan on HTTP service...'
-                bat 'nmap -p 5000 --script=http-vuln* --open --reason 127.0.0.1'
                 script {
-                    sendDiscordNotification('Nmap vulnerability scan completed for HTTP service on port 5000.')
+                    // Capture the Nmap scan output
+                    def scanOutput = bat(script: 'nmap -p 5000 --script=http-vuln* --open --reason 127.0.0.1', returnStdout: true).trim()
+                    // Send detailed scan output to Discord
+                    sendDiscordNotification("Nmap vulnerability scan completed for HTTP service on port 5000. Details:\n\n${scanOutput}")
                 }
             }
         }
