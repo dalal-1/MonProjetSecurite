@@ -5,7 +5,8 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Checkout the project code from the Git repository
-                git 'https://github.com/dalal-1/MonProjetSecurite.git'
+               git branch: 'main', url: 'https://github.com/dalal-1/MonProjetSecurite.git'
+
             }
         }
         
