@@ -1,61 +1,124 @@
 pipeline {
     agent any
-
     environment {
-        GIT_REPO = 'https://github.com/dalal-1/MonProjetSecurite.git'  // Remplace par ton lien de dépôt correct
+        // URL Webhook Discord pour notifications du pipeline
+        DISCORD_WEBHOOK_URL_PIPELINE = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        
+        // Token Codacy pour l'analyse de sécurité et de qualité du code
+        CODACY_TOKEN = '01db00b69eac4393a4f5b8f081702953'
     }
-
     stages {
         stage('Checkout') {
             steps {
-                // Récupération du code depuis GitHub
-                git url: "${GIT_REPO}", branch: 'main'
+                echo 'Checking out the source code...'
+                // Checkout the code from the repository
+                checkout scm
             }
         }
-
+        
         stage('Build') {
             steps {
-                // Compilation et préparation de l'application
                 echo 'Building the application...'
-                // Ajoute ici les commandes de build comme 'mvn clean install' ou d'autres selon ton projet
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                // Déploiement de l'application
-                echo 'Deploying the application...'
-                // Ajoute les commandes nécessaires pour déployer ton application
+                // Replace this with your actual build commands (e.g., Maven, Gradle, etc.)
+                script {
+                    try {
+                        // Example of a build command (for Maven)
+                        sh 'mvn clean install -DskipTests'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
 
         stage('Test') {
             steps {
-                // Tests automatisés
-                echo 'Running tests...'
-                // Ajoute ici les commandes pour exécuter les tests
+                echo 'Running unit tests...'
+                // Running unit tests
+                script {
+                    try {
+                        // Example for running tests (JUnit, pytest, etc.)
+                        sh 'mvn test'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
 
         stage('Security Check') {
             steps {
-                // Vérification de la sécurité
-                echo 'Running security checks...'
-                // Ajoute les outils de vérification comme OWASP ZAP ou SonarQube
+                echo 'Running security analysis using Codacy...'
+                // Perform security checks using Codacy API
+                script {
+                    try {
+                        // Run Codacy analysis
+                        sh """
+                        curl -X POST \
+                            -H "Authorization: token ${CODACY_TOKEN}" \
+                            -F "file=@${WORKSPACE}/your-project-file" \
+                            https://api.codacy.com/2.0/coverage
+                        """
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying the application to production...'
+                // Example of deployment steps (Docker, Kubernetes, etc.)
+                script {
+                    try {
+                        // Deploy command (replace with actual deployment commands)
+                        sh 'docker-compose up -d'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up...'
-            // Ajoute ici des étapes pour le nettoyage après l'exécution
-        }
         success {
-            echo 'Build, Deploy, Test, and Security Check completed successfully.'
+            echo 'Pipeline succeeded.'
+            script {
+                // Sending a notification to Discord for successful pipeline execution
+                def payload = [
+                    content: "🎉 Le pipeline Jenkins a **réussi** avec succès pour MonProjetSecurite!"
+                ]
+                def jsonPayload = groovy.json.JsonOutput.toJson(payload)
+                sh """
+                curl -X POST -H "Content-Type: application/json" -d '${jsonPayload}' ${DISCORD_WEBHOOK_URL_PIPELINE}
+                """
+            }
         }
+        
         failure {
-            echo 'Pipeline failed. Please check the logs for details.'
+            echo 'Pipeline failed.'
+            script {
+                // Sending a notification to Discord for failed pipeline execution
+                def payload = [
+                    content: "🚨 Le pipeline Jenkins a **échoué** pour MonProjetSecurite. Veuillez vérifier les erreurs dans les logs."
+                ]
+                def jsonPayload = groovy.json.JsonOutput.toJson(payload)
+                sh """
+                curl -X POST -H "Content-Type: application/json" -d '${jsonPayload}' ${DISCORD_WEBHOOK_URL_PIPELINE}
+                """
+            }
+        }
+
+        always {
+            echo 'Cleaning up workspace...'
+            // Cleanup workspace after pipeline execution
+            cleanWs()
         }
     }
 }
