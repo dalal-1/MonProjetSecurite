@@ -31,6 +31,46 @@ pipeline {
             }
         }
 
+        stage('Install Bandit') {
+            steps {
+                script {
+                    echo 'Installing Bandit for Python security analysis...'
+                    bat 'pip install bandit' // Installer Bandit via pip
+                }
+            }
+        }
+
+        stage('Run Bandit Analysis') {
+            steps {
+                script {
+                    echo 'Running Bandit analysis on Python code...'
+                    // Commande pour analyser le code Python avec Bandit
+                    bat 'bandit -r . -f json -o bandit-report.json'
+
+                    // Lire le fichier de rapport JSON généré par Bandit
+                    def report = readFile('bandit-report.json')
+                    echo "Bandit analysis results: $report"
+
+                    // Création du payload JSON pour la notification Discord
+                    def body = """
+                    {
+                        "content": "Bandit security analysis completed. Results:\n$report"
+                    }
+                    """
+                    echo "Sending message: $body"
+
+                    // Envoi du rapport de sécurité à Discord
+                    def response = httpRequest(
+                        acceptType: 'APPLICATION_JSON',
+                        contentType: 'APPLICATION_JSON',
+                        httpMode: 'POST',
+                        url: env.DISCORD_WEBHOOK_URL,
+                        requestBody: body
+                    )
+                }
+            }
+        }
+
         stage('Vulnerability Scan') {
             steps {
                 script {
