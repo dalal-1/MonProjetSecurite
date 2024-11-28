@@ -3,7 +3,8 @@ pipeline {
     stages {
         stage('Test CMD Access') {
             steps {
-                bat 'C:\\Windows\\System32\\cmd.exe /c echo Hello'
+               bat 'echo Hello World'
+
 
             }
         }
