@@ -3,7 +3,7 @@ from flask_bootstrap import Bootstrap
 print("Test de modification pour Jenkins")
 print("wa finallyyyyyyyy aaayyyy7")
 print("waa lakhdmat")
-print("lemail wslllty 3afakkgghk")
+print("lemail wslllty 3afakkjgghk")
 app=Flask(__name__)
 Bootstrap(app)
 @app.route('/')
