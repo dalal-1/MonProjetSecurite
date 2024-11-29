@@ -2,60 +2,63 @@ pipeline {
     agent any
 
     environment {
-        // Définir les variables d'environnement nécessaires, comme l'ID de l'agent SSH
+        // Configuration de l'agent SSH (remplacez 'delaila' par le nom correct de votre clé SSH)
+        SSH_KEY = 'delaila' 
         ZAP_HOST = '192.168.1.101'
         ZAP_PORT = '9090'
     }
 
     stages {
-        // Étape de checkout du code depuis Git
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
-        // Étape d'initialisation de ZAP
         stage('Initialize ZAP') {
             steps {
                 script {
-                    // S'assurer que ZAP est lancé en mode daemon sur la machine distante
                     echo 'Démarrage de ZAP en mode daemon'
-                    sshagent(['delaila']) {
-                        sh '''
-                        ssh delaila@192.168.1.101 "zaproxy -daemon -host 192.168.1.101 -port 9090"
-                        '''
+                    // Lancer ZAP en mode daemon
+                    sshagent([SSH_KEY]) {
+                        sh 'ssh delaila@${ZAP_HOST} "zaproxy -daemon -host ${ZAP_HOST} -port ${ZAP_PORT}"'
                     }
                 }
             }
         }
 
-        // Étape de scan de sécurité
+        stage('Check ZAP Status') {
+            steps {
+                script {
+                    echo 'Vérification de l\'état de ZAP'
+                    // Vérifier si ZAP est bien en cours d\'exécution sur le port 9090
+                    sshagent([SSH_KEY]) {
+                        sh 'ssh delaila@${ZAP_HOST} "curl -s http://${ZAP_HOST}:${ZAP_PORT}"'
+                    }
+                }
+            }
+        }
+
         stage('Run Security Scan') {
             steps {
                 script {
-                    echo 'Lancement du scan de sécurité avec ZAP'
-                    // Ici, vous pouvez ajouter des commandes pour effectuer le scan via l'API ZAP
-                    sshagent(['delaila']) {
-                        sh '''
-                        # Commande pour lancer un scan via ZAP, exemple avec l'API ou un script personnalisé
-                        ssh delaila@192.168.1.101 "zaproxy -cmd -host 192.168.1.101 -port 9090 -scan"
-                        '''
+                    echo 'Lancer le scan de sécurité'
+                    // Vous pouvez ajouter ici le lancement de votre scan avec ZAP
+                    sshagent([SSH_KEY]) {
+                        // Exemple de commande pour lancer un scan de sécurité avec ZAP
+                        sh 'ssh delaila@${ZAP_HOST} "zaproxy -cmd -quickurl http://example.com -scanners 1001"'
                     }
                 }
             }
         }
 
-        // Étape pour récupérer le rapport du scan
         stage('Retrieve Scan Report') {
             steps {
                 script {
-                    echo 'Récupération du rapport du scan de sécurité'
-                    // Commande pour récupérer les résultats du scan de sécurité depuis ZAP, par exemple avec l'API
-                    sshagent(['delaila']) {
-                        sh '''
-                        scp delaila@192.168.1.101:/home/delaila/.ZAP/report.html ./report.html
-                        '''
+                    echo 'Récupérer le rapport de scan'
+                    // Exemple pour récupérer le rapport de scan généré
+                    sshagent([SSH_KEY]) {
+                        sh 'scp delaila@${ZAP_HOST}:/path/to/report.html ./'
                     }
                 }
             }
@@ -64,10 +67,11 @@ pipeline {
 
     post {
         success {
-            echo 'Le pipeline a réussi, le scan de sécurité est terminé et les rapports sont récupérés.'
+            echo 'Le pipeline a réussi.'
         }
         failure {
             echo 'Le pipeline a échoué. Vérifiez les étapes du scan de sécurité.'
+            // Ajouter une capture d'erreur si nécessaire
         }
     }
 }
