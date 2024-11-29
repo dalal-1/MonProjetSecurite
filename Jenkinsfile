@@ -2,15 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Définir les variables d'environnement nécessaires
-        SSH_AGENT = credentials('delaila')  // S'assurer que le credential "delaila" est correctement configuré
+        SSH_AGENT = credentials('delaila')  // Utilise le credential 'delaila' contenant la clé privée SSH
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Cloner le projet depuis GitHub
-                git 'https://github.com/dalal-1/MonProjetSecurite.git'
+                // Cloner le projet en utilisant l'URL SSH et le credential 'delaila'
+                git credentialsId: 'delaila', url: 'git@github.com:dalal-1/MonProjetSecurite.git'
             }
         }
 
@@ -20,7 +19,7 @@ pipeline {
                 sshagent(['delaila']) {
                     sh '''
                         echo "Initialisation de ZAP"
-                        # Ajoutez ici toute commande nécessaire pour démarrer ZAP ou configurer les tests
+                        # Ajoutez ici les commandes nécessaires pour démarrer ZAP ou configurer les tests
                     '''
                 }
             }
