@@ -3,11 +3,12 @@ import socket
 import ssl
 import os
 import subprocess
+from urllib.parse import urlparse
 
-# URL à tester (peut être modifiée selon ton besoin)
+# URL to test (can be modified according to your needs)
 TARGET_URL = 'https://localhost:5000'
 
-# Fonction pour tester si un service HTTP est actif
+# Function to test if an HTTP service is active
 def test_http_service():
     try:
         print(f"Testing HTTP service at {TARGET_URL}...")
@@ -19,26 +20,32 @@ def test_http_service():
     except requests.exceptions.RequestException as e:
         print(f"Error during HTTP service check: {e}")
 
-# Fonction pour tester la présence d'une vulnérabilité SSL/TLS (e.g., SSLv2, SSLv3)
+# Function to test for SSL/TLS vulnerabilities (e.g., SSLv2, SSLv3)
 def test_ssl_vulnerabilities():
     try:
         print("Testing SSL/TLS vulnerabilities...")
-        # Connexion SSL pour tester les versions vulnérables
+        # Parsing URL to extract host and port
+        parsed_url = urlparse(TARGET_URL)
+        host = parsed_url.hostname
+        port = parsed_url.port if parsed_url.port else 443  # Default to 443 if no port is specified
+
         context = ssl.create_default_context()
-        with socket.create_connection((TARGET_URL.split('//')[1], 443)) as sock:
-            with context.wrap_socket(sock, server_hostname=TARGET_URL.split('//')[1]) as ssock:
+        with socket.create_connection((host, port)) as sock:
+            with context.wrap_socket(sock, server_hostname=host) as ssock:
                 print(f"SSL certificate for {TARGET_URL} is valid.")
-                # On pourrait aussi analyser ici la force du chiffrement ou les algorithmes obsolètes
+                # You could also analyze the encryption strength or deprecated algorithms here
     except Exception as e:
         print(f"SSL vulnerability test failed: {e}")
 
-# Fonction pour tester les versions de logiciels à l'aide de banner grabbing
+# Function to test software versions using banner grabbing
 def test_banner_grabbing():
     try:
         print(f"Testing banner grabbing for {TARGET_URL}...")
-        ip = socket.gethostbyname(TARGET_URL.split('//')[1])
+        parsed_url = urlparse(TARGET_URL)
+        ip = socket.gethostbyname(parsed_url.hostname)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((ip, 80))  # Port 80 pour HTTP
+        sock.settimeout(5)  # Added timeout to avoid hanging
+        sock.connect((ip, 80))  # Port 80 for HTTP
         sock.send(b"GET / HTTP/1.1\r\n")
         banner = sock.recv(1024)
         sock.close()
@@ -46,12 +53,12 @@ def test_banner_grabbing():
     except Exception as e:
         print(f"Banner grabbing failed: {e}")
 
-# Fonction pour analyser les erreurs de configuration dans l'application (par exemple, chemins exposés)
+# Function to analyze application configuration errors (e.g., exposed paths)
 def test_configuration_errors():
     print("Testing for potential configuration errors...")
     errors = []
     
-    # Vérification de l'existence de fichiers sensibles (ex: .env, .git, etc.)
+    # Checking for the existence of sensitive files (e.g., .env, .git, etc.)
     sensitive_files = ['.git', '.env', 'config.php']
     for file in sensitive_files:
         if os.path.exists(file):
@@ -64,11 +71,11 @@ def test_configuration_errors():
     else:
         print("No configuration errors detected.")
 
-# Fonction pour tester des vulnérabilités spécifiques à un CMS, un framework, etc.
+# Function to test for specific vulnerabilities (e.g., exposed admin pages)
 def test_specific_vulnerabilities():
     print("Testing for known vulnerabilities...")
     
-    # Exemple : vérifier si un script particulier existe (peut être spécifique à un CMS, etc.)
+    # Example: Check if an admin page is exposed (specific to certain CMS, frameworks, etc.)
     try:
         response = requests.get(f"{TARGET_URL}/admin", timeout=5)
         if response.status_code == 200:
@@ -78,7 +85,7 @@ def test_specific_vulnerabilities():
     except requests.exceptions.RequestException as e:
         print(f"Error checking admin page: {e}")
 
-# Fonction principale d'exécution des tests de sécurité
+# Main function to execute the security tests
 def run_security_tests():
     test_http_service()
     test_ssl_vulnerabilities()
