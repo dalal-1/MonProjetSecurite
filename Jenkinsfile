@@ -35,17 +35,7 @@ pipeline {
             }
         }
 
-        stage('Run scan.py') {
-            steps {
-                echo 'Running scan.py for additional vulnerability checks...'
-                script {
-                    // Assuming the Python environment is set up and scan.py is in the project directory
-                    sh 'python3 scan.py'
-                    sendDiscordNotification('security_scan.py execution completed.')
-                }
-            }
-        }
-    }
+        
 
     post {
         always {
