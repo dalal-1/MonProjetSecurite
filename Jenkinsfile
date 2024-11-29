@@ -34,8 +34,7 @@ pipeline {
                 }
             }
         }
-
-        
+    }
 
     post {
         always {
@@ -53,7 +52,8 @@ def sendDiscordNotification(String message) {
         "content": "$message"
     }
     """
-    def response = httpRequest(
+    // Send notification using the httpRequest step
+    httpRequest(
         acceptType: 'APPLICATION_JSON',
         contentType: 'APPLICATION_JSON',
         httpMode: 'POST',
