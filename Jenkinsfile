@@ -2,25 +2,56 @@ pipeline {
     agent any
 
     environment {
-        SSH_AGENT = credentials('delaila')  // Utilise le credential 'delaila' contenant la clé privée SSH
+        GIT_REPO = 'https://github.com/dalal-1/MonProjetSecurite.git'  // Remplace par ton URL de dépôt Git
+        TARGET_URL = 'https://localhost:5000'  // URL cible à tester, modifie selon ton besoin
+        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'  // Ton webhook Discord
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                // Cloner le projet en utilisant l'URL SSH et le credential 'delaila'
-                git credentialsId: 'delaila', url: 'git@github.com:dalal-1/MonProjetSecurite.git'
+                // Récupérer le code du projet depuis le dépôt Git
+                git url: "${GIT_REPO}", branch: 'main'  // Remplace 'main' par la branche que tu utilises
             }
         }
 
-        stage('Initialize ZAP') {
+        stage('Install Dependencies') {
             steps {
-                // Initialisation de l'agent SSH
-                sshagent(['delaila']) {
+                script {
+                    // Installer les dépendances nécessaires (si Python ou autres bibliothèques sont nécessaires)
                     sh '''
-                        echo "Initialisation de ZAP"
-                        # Ajoutez ici les commandes nécessaires pour démarrer ZAP ou configurer les tests
+                    # Mettre à jour les packages
+                    sudo apt-get update
+
+                    # Installer les dépendances Python (si non installées)
+                    pip install requests
                     '''
+                }
+            }
+        }
+
+        stage('Run Security Scan') {
+            steps {
+                script {
+                    // Exécuter le script Python de sécurité
+                    echo "Running Security Scan..."
+                    sh 'python3 security_scan.py'
+                }
+            }
+        }
+
+        stage('Notify Discord') {
+            steps {
+                script {
+                    // Notification via Discord
+                    def message = 'Security scan completed.'
+
+                    // Envoie un message à Discord via le webhook
+                    sh """
+                    curl -X POST -H "Content-Type: application/json" \
+                        -d '{"content": "${message}"}' \
+                        ${DISCORD_WEBHOOK_URL}
+                    """
                 }
             }
         }
@@ -28,13 +59,18 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline terminé"
+            // Actions après l'exécution, comme nettoyer ou notifier en cas d'échec
+            echo 'Pipeline finished.'
         }
+
         success {
-            echo "Pipeline réussi"
+            // Si le pipeline est réussi, envoie une notification de succès
+            echo 'Pipeline completed successfully.'
         }
+
         failure {
-            echo "Pipeline échoué"
+            // Si le pipeline échoue, envoie une notification d'erreur
+            echo 'Pipeline failed. Check logs for errors.'
         }
     }
 }
