@@ -1,29 +1,11 @@
 pipeline {
     agent any
     stages {
-        stage('Checkout SCM') {
-            steps {
-                checkout scm
-            }
-        }
         stage('Initialize ZAP') {
             steps {
-                // Utilisation de l'agent SSH pour se connecter à la machine distante
-                sshagent(credentials: ['delaila']) {
-                    script {
-                        // Commande pour démarrer ZAP en mode daemon sur l'hôte distant
-                        sh 'ssh user@192.168.1.101 "zaproxy -daemon -host 192.168.1.101 -port 9090"'
-                    }
-                }
-            }
-        }
-        stage('Check ZAP Status') {
-            steps {
-                sshagent(credentials: ['delaila']) {
-                    script {
-                        // Vérifier si ZAP est bien en fonctionnement sur la machine distante
-                        sh 'ssh user@192.168.1.101 "ps aux | grep zaproxy"'
-                    }
+                sshagent(credentials: ['cdabd150-c297-45cf-80c5-2c5307c16d9c']) { // Utilise l'ID unique de l'identifiant SSH
+                    // Exécute la commande SSH sur le serveur distant
+                    sh 'ssh user@192.168.1.101 "ton-commande"'
                 }
             }
         }
