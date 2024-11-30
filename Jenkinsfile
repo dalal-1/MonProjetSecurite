@@ -17,7 +17,7 @@ pipeline {
                 script {
                     sh 'sudo apt-get update'
                     sh 'sudo apt-get install -y nmap'
-                    sendDiscordNotification("🔧 **Preparation complète** ✅\nLes dépendances ont été mises à jour et Nmap installé!")
+                    sendDiscordNotification("🔧 **Étape 1 : Préparation Terminée** ✅\nLa mise à jour des dépendances a été effectuée et Nmap a été installé avec succès. Prêt à lancer le scan !")
                 }
             }
         }
@@ -25,8 +25,8 @@ pipeline {
         stage('Scan with Nmap') {
             steps {
                 script {
-                    sh 'sudo nmap -p 80,443,8080 127.0.0.1'
-                    sendDiscordNotification("🛠️ **Scan Nmap terminé** 🕵️‍♂️\nLes ports ont été scannés : 80/tcp (closed), 443/tcp (closed), 8080/tcp (open).")
+                    sh 'sudo nmap -p 80,443,8080 127.0.0.1 -oN /var/lib/jenkins/nmap_scan_results.txt'
+                    sendDiscordNotification("🛠️ **Étape 2 : Scan Nmap Terminé** 🕵️‍♂️\nLe scan des ports a été effectué. Voici un résumé des résultats :\n\n```txt\n$(cat /var/lib/jenkins/nmap_scan_results.txt)```.\n\nLes détails complets sont enregistrés dans un fichier texte. [Consultez-le ici](file:///var/lib/jenkins/nmap_scan_results.txt).")
                 }
             }
         }
@@ -38,7 +38,7 @@ pipeline {
                     sh 'sudo chown -R jenkins:jenkins /var/lib/jenkins/zap_reports'
                     sh 'sudo chmod -R 755 /var/lib/jenkins/zap_reports'
                     sh 'sudo zaproxy -cmd -quickurl http://localhost:5000 -quickout /var/lib/jenkins/zap_reports/zap_report.html -port 8081'
-                    sendDiscordNotification("🚨 **Scan ZAP terminé** ✅\nLe rapport de sécurité a été généré :zap: [Clique ici pour le rapport](file:///var/lib/jenkins/zap_reports/zap_report.html).")
+                    sendDiscordNotification("🚨 **Étape 3 : Scan ZAP Terminée** ✅\nLe scan de sécurité a été effectué avec succès. Un rapport détaillé est disponible.\n\n🔑 **Rapport de sécurité ZAP** : [Cliquez ici pour le rapport HTML](file:///var/lib/jenkins/zap_reports/zap_report.html).")
                 }
             }
         }
@@ -46,8 +46,8 @@ pipeline {
         stage('Post Actions') {
             steps {
                 script {
-                    echo "Post actions completed"
-                    sendDiscordNotification("🎉 **Pipeline terminé avec succès!** 🎉\nToutes les étapes ont été réalisées sans erreur!")
+                    echo "Toutes les étapes du pipeline sont terminées."
+                    sendDiscordNotification("🎉 **Pipeline Terminée avec succès !** 🎉\nToutes les étapes ont été exécutées sans erreur et les rapports ont été générés. Vérifiez les résultats des scans Nmap et ZAP ci-dessus.")
                 }
             }
         }
@@ -55,7 +55,7 @@ pipeline {
 
     post {
         always {
-            sendDiscordNotification("🔔 **Pipeline exécuté**: ${currentBuild.result} - ${env.BUILD_URL}")
+            sendDiscordNotification("🔔 **Exécution du Pipeline : ${currentBuild.result}** - ${env.BUILD_URL}\nConsultez le lien vers les résultats du build ci-dessus.")
         }
     }
 }
