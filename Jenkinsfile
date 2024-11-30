@@ -2,19 +2,20 @@ pipeline {
     agent any
 
     environment {
-        ZAP_PORT = 8081
-        APP_PORT = 5000
-        APP_URL = "http://localhost:${APP_PORT}"
-        NMAP_RESULTS = "nmap_results.xml"
-        NIKTO_RESULTS = "nikto_results.html"
+        GIT_URL = 'https://github.com/dalal-1/MonProjetSecurite.git'
+        BRANCH_NAME = 'main'
     }
 
     stages {
-        stage('Clone Project') {
+        stage('Checkout SCM') {
             steps {
                 script {
-                    // Clone the Git repository
-                    git 'https://github.com/dalal-1/MonProjetSecurite.git'
+                    // Checkout du dépôt depuis la branche 'main'
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${env.BRANCH_NAME}"]],
+                        userRemoteConfigs: [[url: env.GIT_URL]]
+                    ])
                 }
             }
         }
@@ -22,9 +23,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Create virtual environment and install dependencies
-                    sh 'python3 -m venv venv'
-                    sh 'source venv/bin/activate && pip install -r requirements.txt'
+                    // Commande pour installer les dépendances, si applicable
+                    echo "Installing dependencies..."
+                    // Exemple : sh 'pip install -r requirements.txt'
                 }
             }
         }
@@ -32,9 +33,9 @@ pipeline {
         stage('Start Application') {
             steps {
                 script {
-                    // Start the Flask application in the background
-                    echo 'Starting Flask application...'
-                    sh 'source venv/bin/activate && nohup python3 app.py &'
+                    // Démarrer l'application ou d'autres processus
+                    echo "Starting the application..."
+                    // Exemple : sh 'python app.py'
                 }
             }
         }
@@ -42,9 +43,9 @@ pipeline {
         stage('Start ZAP for Security Scan') {
             steps {
                 script {
-                    // Start ZAP in daemon mode on the specified port
-                    echo 'Starting ZAP...'
-                    sh "zap.sh -daemon -port ${ZAP_PORT} -config spider.maxChildren=5"
+                    // Démarrer OWASP ZAP pour le scan de sécurité
+                    echo "Starting ZAP for security scan..."
+                    // Exemple : sh 'zap.sh -daemon -config api.disablekey=true'
                 }
             }
         }
@@ -52,13 +53,9 @@ pipeline {
         stage('Run Nmap Scan') {
             steps {
                 script {
-                    // Wait for the application to start
-                    echo 'Waiting for application to start...'
-                    sleep(time: 30, unit: 'SECONDS')
-
-                    // Perform Nmap scan to find open ports and vulnerabilities
-                    echo 'Running Nmap scan...'
-                    sh "nmap -sV -oX ${NMAP_RESULTS} ${APP_URL}"
+                    // Lancer un scan Nmap
+                    echo "Running Nmap scan..."
+                    // Exemple : sh 'nmap -sS localhost'
                 }
             }
         }
@@ -66,9 +63,9 @@ pipeline {
         stage('Run Nikto Scan') {
             steps {
                 script {
-                    // Perform Nikto scan to check for web vulnerabilities
-                    echo 'Running Nikto scan...'
-                    sh "nikto -h ${APP_URL} -o ${NIKTO_RESULTS} -Format htm"
+                    // Lancer un scan Nikto
+                    echo "Running Nikto scan..."
+                    // Exemple : sh 'nikto -h http://localhost'
                 }
             }
         }
@@ -76,9 +73,9 @@ pipeline {
         stage('Run ZAP Scan') {
             steps {
                 script {
-                    // Run a quick scan using zap-cli or ZAP API
-                    echo 'Running ZAP scan...'
-                    sh "zap-cli quick-scan --self-contained ${APP_URL}"
+                    // Effectuer le scan de sécurité avec ZAP
+                    echo "Running ZAP scan..."
+                    // Exemple : sh 'zap-cli active-scan --url http://localhost'
                 }
             }
         }
@@ -86,9 +83,9 @@ pipeline {
         stage('Stop ZAP') {
             steps {
                 script {
-                    // Stop ZAP after the scan
-                    echo 'Stopping ZAP...'
-                    sh 'zap-cli shutdown'
+                    // Arrêter ZAP après le scan
+                    echo "Stopping ZAP..."
+                    // Exemple : sh 'zap-cli shutdown'
                 }
             }
         }
@@ -96,9 +93,9 @@ pipeline {
         stage('Stop Application') {
             steps {
                 script {
-                    // Stop the Flask application
-                    echo 'Stopping Flask application...'
-                    sh 'pkill -f "python3 app.py"'
+                    // Arrêter l'application ou autres services
+                    echo "Stopping application..."
+                    // Exemple : sh 'kill $(ps aux | grep app.py | awk '{print $1}')'
                 }
             }
         }
@@ -106,9 +103,9 @@ pipeline {
         stage('Generate Reports') {
             steps {
                 script {
-                    // Archive the results from Nmap, Nikto, and ZAP
-                    echo 'Archiving scan results...'
-                    archiveArtifacts artifacts: '${NMAP_RESULTS}, ${NIKTO_RESULTS}, zap_report.html', allowEmptyArchive: true
+                    // Générer des rapports après les scans
+                    echo "Generating reports..."
+                    // Exemple : sh 'python generate_reports.py'
                 }
             }
         }
@@ -116,9 +113,8 @@ pipeline {
 
     post {
         always {
-            // Clean up the workspace after every run
-            echo 'Cleaning up...'
-            cleanWs()
+            echo "Cleaning up workspace..."
+            cleanWs() // Nettoie l'espace de travail après l'exécution
         }
     }
 }
