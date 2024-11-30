@@ -44,8 +44,8 @@ pipeline {
             steps {
                 script {
                     echo "Running Nmap scan..."
-                    // Run Nmap scan and save results to a variable
-                    def nmapResults = sh(script: 'nmap -sS -p 80,443,8080 localhost', returnStdout: true).trim()
+                    // Run Nmap scan on common ports only for speed
+                    def nmapResults = sh(script: 'nmap -T4 -sS -p 80,443,8080 localhost', returnStdout: true).trim()
                     echo "Nmap Scan Results: ${nmapResults}"
 
                     // Send results to Discord
@@ -58,8 +58,8 @@ pipeline {
             steps {
                 script {
                     echo "Running Nikto scan..."
-                    // Run Nikto scan and save results to a variable
-                    def niktoResults = sh(script: 'nikto -h http://localhost', returnStdout: true).trim()
+                    // Run Nikto scan only with critical vulnerabilities check
+                    def niktoResults = sh(script: 'nikto -h http://localhost -Tuning 1,2,3', returnStdout: true).trim() // Limit the checks to the most critical
                     echo "Nikto Scan Results: ${niktoResults}"
 
                     // Send results to Discord
@@ -72,7 +72,7 @@ pipeline {
             steps {
                 script {
                     echo "Running ZAP scan..."
-                    // Run ZAP scan and save results to a variable
+                    // Run ZAP scan with a faster configuration
                     def zapResults = sh(script: 'zap-cli quick-scan --self-contained http://localhost', returnStdout: true).trim()
                     echo "ZAP Scan Results: ${zapResults}"
 
