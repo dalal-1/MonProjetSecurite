@@ -2,35 +2,113 @@ pipeline {
     agent any
 
     environment {
-        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+        ZAP_PORT = 8081
+        APP_PORT = 5000
+        APP_URL = "http://localhost:${APP_PORT}"
+        NMAP_RESULTS = "nmap_results.xml"
+        NIKTO_RESULTS = "nikto_results.html"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Project') {
             steps {
-                checkout scm
                 script {
-                    sendDiscordNotification('Checkout completed successfully!')
+                    // Clone the Git repository
+                    git 'https://github.com/dalal-1/MonProjetSecurite.git'
                 }
             }
         }
 
-        stage('Check Nmap') {
+        stage('Install Dependencies') {
             steps {
-                bat 'echo %PATH%'
-                bat 'nmap --version'
                 script {
-                    sendDiscordNotification('Nmap is installed and version verified.')
+                    // Create virtual environment and install dependencies
+                    sh 'python3 -m venv venv'
+                    sh 'source venv/bin/activate && pip install -r requirements.txt'
                 }
             }
         }
 
-        stage('Vulnerability Scan with Nmap') {
+        stage('Start Application') {
             steps {
-                echo 'Running Nmap Vulnerability Scan on HTTP service...'
-                bat 'nmap -p 5000 --script=http-vuln* --open --reason 127.0.0.1'
                 script {
-                    sendDiscordNotification('Nmap vulnerability scan completed for HTTP service on port 5000.')
+                    // Start the Flask application in the background
+                    echo 'Starting Flask application...'
+                    sh 'source venv/bin/activate && nohup python3 app.py &'
+                }
+            }
+        }
+
+        stage('Start ZAP for Security Scan') {
+            steps {
+                script {
+                    // Start ZAP in daemon mode on the specified port
+                    echo 'Starting ZAP...'
+                    sh "zap.sh -daemon -port ${ZAP_PORT} -config spider.maxChildren=5"
+                }
+            }
+        }
+
+        stage('Run Nmap Scan') {
+            steps {
+                script {
+                    // Wait for the application to start
+                    echo 'Waiting for application to start...'
+                    sleep(time: 30, unit: 'SECONDS')
+
+                    // Perform Nmap scan to find open ports and vulnerabilities
+                    echo 'Running Nmap scan...'
+                    sh "nmap -sV -oX ${NMAP_RESULTS} ${APP_URL}"
+                }
+            }
+        }
+
+        stage('Run Nikto Scan') {
+            steps {
+                script {
+                    // Perform Nikto scan to check for web vulnerabilities
+                    echo 'Running Nikto scan...'
+                    sh "nikto -h ${APP_URL} -o ${NIKTO_RESULTS} -Format htm"
+                }
+            }
+        }
+
+        stage('Run ZAP Scan') {
+            steps {
+                script {
+                    // Run a quick scan using zap-cli or ZAP API
+                    echo 'Running ZAP scan...'
+                    sh "zap-cli quick-scan --self-contained ${APP_URL}"
+                }
+            }
+        }
+
+        stage('Stop ZAP') {
+            steps {
+                script {
+                    // Stop ZAP after the scan
+                    echo 'Stopping ZAP...'
+                    sh 'zap-cli shutdown'
+                }
+            }
+        }
+
+        stage('Stop Application') {
+            steps {
+                script {
+                    // Stop the Flask application
+                    echo 'Stopping Flask application...'
+                    sh 'pkill -f "python3 app.py"'
+                }
+            }
+        }
+
+        stage('Generate Reports') {
+            steps {
+                script {
+                    // Archive the results from Nmap, Nikto, and ZAP
+                    echo 'Archiving scan results...'
+                    archiveArtifacts artifacts: '${NMAP_RESULTS}, ${NIKTO_RESULTS}, zap_report.html', allowEmptyArchive: true
                 }
             }
         }
@@ -38,26 +116,9 @@ pipeline {
 
     post {
         always {
-            script {
-                sendDiscordNotification('Pipeline execution finished.')
-            }
+            // Clean up the workspace after every run
+            echo 'Cleaning up...'
+            cleanWs()
         }
     }
-}
-
-// Function to send a notification to Discord
-def sendDiscordNotification(String message) {
-    def body = """
-    {
-        "content": "$message"
-    }
-    """
-    // Send notification using the httpRequest step
-    httpRequest(
-        acceptType: 'APPLICATION_JSON',
-        contentType: 'APPLICATION_JSON',
-        httpMode: 'POST',
-        url: env.DISCORD_WEBHOOK_URL,
-        requestBody: body
-    )
 }
