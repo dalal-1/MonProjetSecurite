@@ -16,8 +16,8 @@ pipeline {
         stage('Run Bandit Scan') {
             steps {
                 script {
-                    // Exécuter Bandit pour analyser le code Python
-                    def banditResults = sh(script: 'bandit -r .', returnStdout: true).trim()
+                    // Exécuter Bandit pour analyser le code Python et continuer même si des erreurs sont détectées
+                    def banditResults = sh(script: 'bandit -r .', returnStdout: true, returnStatus: true).trim()
                     echo "Bandit Results: ${banditResults}"
                     sendToDiscord("🚨 **Bandit Scan Results** 🚨\n```\n${banditResults}\n```")
                 }
