@@ -1,71 +1,80 @@
 pipeline {
     agent any
+
+    environment {
+        // URL du webhook Discord (remplacez avec votre URL)
+        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
+    }
+
     stages {
-        stage('Declarative: Checkout SCM') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        stage('Start Application') {
+
+        stage('Start Flask Application') {
             steps {
                 script {
-                    echo 'Starting the application...'
-                    sh 'python3 app.py'
+                    echo 'Starting the Flask application...'
+                    // Lancer l'application Flask en arrière-plan
+                    sh 'python3 app.py &'
+                    // Attendre un peu pour s'assurer que l'application est lancée
+                    sleep 10
                 }
             }
         }
+
+        stage('Run Bandit Scan') {
+            steps {
+                script {
+                    echo 'Running Bandit security scan...'
+                    // Exécuter Bandit pour analyser le code source Python
+                    def banditResults = sh(script: 'bandit -r .', returnStdout: true).trim()
+                    echo "Bandit Results: ${banditResults}"
+                    // Envoyer les résultats à Discord
+                    sendToDiscord("🚨 **Bandit Scan Results** 🚨\n```\n${banditResults}\n```")
+                }
+            }
+        }
+
         stage('Run Nmap Scan') {
             steps {
                 script {
                     echo 'Running Nmap scan...'
-
-                    // Débogage pour vérifier l'utilisateur Jenkins
-                    sh 'whoami'
-                    sh 'sudo -v'  // Vérifie que sudo fonctionne sans mot de passe
-
-                    // Exécution du scan Nmap avec sudo
-                    def nmapResults = sh(script: 'sudo nmap -T4 -sS -p 80,443,8080 localhost', returnStdout: true).trim()
+                    // Exécuter un scan Nmap pour les ports ouverts
+                    def nmapResults = sh(script: 'nmap -T4 -sS -p 80,443,8080 localhost', returnStdout: true).trim()
                     echo "Nmap Results: ${nmapResults}"
-
-                    // Envoi des résultats à Discord (si nécessaire)
-                    sendToDiscord("🚨 **Résultats Nmap** 🚨\n```\n${nmapResults}\n```")
+                    // Envoyer les résultats à Discord
+                    sendToDiscord("🚨 **Nmap Scan Results** 🚨\n```\n${nmapResults}\n```")
                 }
             }
         }
-        stage('Run Nikto Scan') {
-            steps {
-                script {
-                    echo 'Running Nikto scan...'
-                    def niktoResults = sh(script: 'nikto -h localhost', returnStdout: true).trim()
-                    echo "Nikto Results: ${niktoResults}"
 
-                    // Envoi des résultats à Discord (si nécessaire)
-                    sendToDiscord("🚨 **Résultats Nikto** 🚨\n```\n${niktoResults}\n```")
-                }
-            }
-        }
         stage('Run ZAP Scan') {
             steps {
                 script {
-                    echo 'Running ZAP scan...'
-                    // Assurez-vous que ZAP est installé et que zap-cli est utilisé pour exécuter le scan
-                    def zapResults = sh(script: 'zap-cli quick-scan --self-contained localhost', returnStdout: true).trim()
+                    echo 'Running ZAP security scan...'
+                    // Exécuter un scan rapide avec ZAP Proxy (zaproxy)
+                    def zapResults = sh(script: 'zaproxy -cmd -quickurl http://localhost:5000', returnStdout: true).trim()
                     echo "ZAP Results: ${zapResults}"
-
-                    // Envoi des résultats à Discord (si nécessaire)
-                    sendToDiscord("🚨 **Résultats ZAP** 🚨\n```\n${zapResults}\n```")
+                    // Envoyer les résultats à Discord
+                    sendToDiscord("🚨 **ZAP Scan Results** 🚨\n```\n${zapResults}\n```")
                 }
             }
         }
-        stage('Stop Application') {
+
+        stage('Stop Flask Application') {
             steps {
                 script {
-                    echo 'Stopping the application...'
-                    sh 'kill $(lsof -t -i:5000)' // Assurez-vous de tuer le processus de l'application Flask si nécessaire
+                    echo 'Stopping the Flask application...'
+                    // Arrêter l'application Flask
+                    sh 'kill $(lsof -t -i:5000)'
                 }
             }
         }
     }
+
     post {
         always {
             cleanWs()  // Nettoyage de l'espace de travail après l'exécution
@@ -73,8 +82,11 @@ pipeline {
     }
 }
 
+// Fonction pour envoyer un message à Discord via Webhook
 def sendToDiscord(message) {
-    // Remplace cette fonction par l'intégration Discord que tu utilises pour envoyer des messages
-    echo "Sending to Discord: ${message}"
-    // Code d'envoi à Discord ici, par exemple avec un webhook
+    sh """
+        curl -X POST -H "Content-Type: application/json" \
+        -d '{"content": "${message}"}' \
+        ${DISCORD_WEBHOOK_URL}
+    """
 }
