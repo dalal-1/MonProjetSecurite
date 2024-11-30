@@ -2,30 +2,21 @@ pipeline {
     agent any
 
     environment {
-        GIT_URL = 'https://github.com/dalal-1/MonProjetSecurite.git'
-        BRANCH_NAME = 'main'
+        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1311544596853166101/BK92iL16-3q27PWyLu45BwRaZZedC86swLC9nAAFFOpcyn0kuceMqH61Zknaxgiwd5hd'
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                script {
-                    // Checkout du dépôt depuis la branche 'main'
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "*/${env.BRANCH_NAME}"]],
-                        userRemoteConfigs: [[url: env.GIT_URL]]
-                    ])
-                }
+                checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Commande pour installer les dépendances, si applicable
                     echo "Installing dependencies..."
-                    // Exemple : sh 'pip install -r requirements.txt'
+                    sh 'pip install -r requirements.txt'
                 }
             }
         }
@@ -33,9 +24,8 @@ pipeline {
         stage('Start Application') {
             steps {
                 script {
-                    // Démarrer l'application ou d'autres processus
                     echo "Starting the application..."
-                    // Exemple : sh 'python app.py'
+                    sh 'python3 app.py &'
                 }
             }
         }
@@ -43,9 +33,9 @@ pipeline {
         stage('Start ZAP for Security Scan') {
             steps {
                 script {
-                    // Démarrer OWASP ZAP pour le scan de sécurité
                     echo "Starting ZAP for security scan..."
-                    // Exemple : sh 'zap.sh -daemon -config api.disablekey=true'
+                    // Start OWASP ZAP in daemon mode for scanning
+                    sh 'zap.sh -daemon -config api.disablekey=true'
                 }
             }
         }
@@ -53,9 +43,13 @@ pipeline {
         stage('Run Nmap Scan') {
             steps {
                 script {
-                    // Lancer un scan Nmap
                     echo "Running Nmap scan..."
-                    // Exemple : sh 'nmap -sS localhost'
+                    // Run Nmap scan and save results to a variable
+                    def nmapResults = sh(script: 'nmap -sS -p 80,443,8080 localhost', returnStdout: true).trim()
+                    echo "Nmap Scan Results: ${nmapResults}"
+
+                    // Send results to Discord
+                    sendToDiscord("🚨 **Résultats des scans de sécurité** 🚨\n\n🔍 **Scan Nmap** :\nLes résultats du scan Nmap sont prêts. Voici les détails des ports ouverts et des services détectés sur le système :\n```\n${nmapResults}\n```\n_Analyse complète des services et des ports ouverts._ 🛠️")
                 }
             }
         }
@@ -63,9 +57,13 @@ pipeline {
         stage('Run Nikto Scan') {
             steps {
                 script {
-                    // Lancer un scan Nikto
                     echo "Running Nikto scan..."
-                    // Exemple : sh 'nikto -h http://localhost'
+                    // Run Nikto scan and save results to a variable
+                    def niktoResults = sh(script: 'nikto -h http://localhost', returnStdout: true).trim()
+                    echo "Nikto Scan Results: ${niktoResults}"
+
+                    // Send results to Discord
+                    sendToDiscord("🔒 **Scan Nikto** :\nNikto a détecté des vulnérabilités potentielles sur l'application web. Voici un résumé des problèmes identifiés :\n```\n${niktoResults}\n```\n_Exploration approfondie des vulnérabilités de l'application._ ⚠️")
                 }
             }
         }
@@ -73,9 +71,13 @@ pipeline {
         stage('Run ZAP Scan') {
             steps {
                 script {
-                    // Effectuer le scan de sécurité avec ZAP
                     echo "Running ZAP scan..."
-                    // Exemple : sh 'zap-cli active-scan --url http://localhost'
+                    // Run ZAP scan and save results to a variable
+                    def zapResults = sh(script: 'zap-cli quick-scan --self-contained http://localhost', returnStdout: true).trim()
+                    echo "ZAP Scan Results: ${zapResults}"
+
+                    // Send results to Discord
+                    sendToDiscord("🛡️ **Scan ZAP (OWASP)** :\nLe scan de sécurité effectué par ZAP a permis d\'identifier des failles potentielles et des risques liés à la sécurité de l\'application :\n```\n${zapResults}\n```\n_Analyse complète du code de l'application et de sa sécurité._ 🔐")
                 }
             }
         }
@@ -83,9 +85,9 @@ pipeline {
         stage('Stop ZAP') {
             steps {
                 script {
-                    // Arrêter ZAP après le scan
                     echo "Stopping ZAP..."
-                    // Exemple : sh 'zap-cli shutdown'
+                    // Stop OWASP ZAP after scan is complete
+                    sh 'zap.sh -daemon -config api.disablekey=true -stop'
                 }
             }
         }
@@ -93,9 +95,9 @@ pipeline {
         stage('Stop Application') {
             steps {
                 script {
-                    // Arrêter l'application ou autres services
                     echo "Stopping application..."
-                    // Exemple : sh 'kill $(ps aux | grep app.py | awk '{print $1}')'
+                    // Stop the Flask application
+                    sh 'pkill -f app.py'
                 }
             }
         }
@@ -103,9 +105,17 @@ pipeline {
         stage('Generate Reports') {
             steps {
                 script {
-                    // Générer des rapports après les scans
                     echo "Generating reports..."
-                    // Exemple : sh 'python generate_reports.py'
+                    // Place any additional report generation steps here, if needed.
+                }
+            }
+        }
+
+        stage('Post Actions') {
+            steps {
+                script {
+                    echo "Cleaning up workspace..."
+                    cleanWs()
                 }
             }
         }
@@ -113,8 +123,17 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning up workspace..."
-            cleanWs() // Nettoie l'espace de travail après l'exécution
+            // Send final completion message to Discord
+            sendToDiscord("🔔 **Tous les scans ont été exécutés avec succès !**\nLes résultats sont maintenant disponibles pour examen et peuvent être utilisés pour renforcer la sécurité de l'application. Si vous avez des questions ou des préoccupations, n'hésitez pas à nous contacter. 📩\n\n**🔒 Sécurisez vos systèmes, protégez vos données !** 🛡️")
         }
     }
+}
+
+// Function to send messages to Discord webhook
+def sendToDiscord(String message) {
+    sh """
+    curl -X POST -H "Content-Type: application/json" \
+    -d '{"content": "${message}"}' \
+    ${DISCORD_WEBHOOK_URL}
+    """
 }
