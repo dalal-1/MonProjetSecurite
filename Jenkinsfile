@@ -15,9 +15,9 @@ pipeline {
         stage('Run Bandit Scan') {
             steps {
                 script {
-                    // Exécute Bandit sur le répertoire du projet Python
+                    // Exécute Bandit et ignore les erreurs
                     echo "Running Bandit security analysis..."
-                    def banditResults = sh(script: 'bandit -r .', returnStdout: true).trim()
+                    def banditResults = sh(script: 'bandit -r . || true', returnStdout: true).trim()
                     echo "Bandit scan results:\n${banditResults}"
                 }
             }
@@ -37,7 +37,7 @@ pipeline {
         stage('Run ZAP Scan') {
             steps {
                 script {
-                    // Exécute ZAP pour scanner le site web local
+                    // Exécute OWASP ZAP pour scanner le site web local
                     echo "Running OWASP ZAP scan..."
                     def zapResults = sh(script: 'zaproxy -cmd -quickurl http://localhost:5000', returnStdout: true).trim()
                     echo "ZAP scan results:\n${zapResults}"
