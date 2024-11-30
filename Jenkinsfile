@@ -35,7 +35,7 @@ pipeline {
                 script {
                     echo "Starting ZAP for security scan..."
                     // Start OWASP ZAP in daemon mode for scanning
-                    sh 'zap.sh -daemon -config api.disablekey=true'
+                    sh 'zaproxy -daemon -config api.disablekey=true'
                 }
             }
         }
@@ -87,7 +87,7 @@ pipeline {
                 script {
                     echo "Stopping ZAP..."
                     // Stop OWASP ZAP after scan is complete
-                    sh 'zap.sh -daemon -config api.disablekey=true -stop'
+                    sh 'zaproxy -daemon -config api.disablekey=true -shutdown'
                 }
             }
         }
