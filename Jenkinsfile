@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-        // Définir des variables d'environnement si nécessaire
-    }
     stages {
         stage('Declarative: Checkout SCM') {
             steps {
@@ -77,7 +74,7 @@ pipeline {
 }
 
 def sendToDiscord(message) {
-    // Remplacez cette fonction par l'intégration Discord que tu utilises pour envoyer des messages
+    // Remplace cette fonction par l'intégration Discord que tu utilises pour envoyer des messages
     echo "Sending to Discord: ${message}"
     // Code d'envoi à Discord ici, par exemple avec un webhook
 }
