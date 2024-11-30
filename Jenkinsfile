@@ -18,6 +18,11 @@ pipeline {
                     // Exécute Bandit sur le répertoire du projet et récupère uniquement la sortie
                     def banditResults = sh(script: 'bandit -r .', returnStdout: true).trim()
                     echo "Bandit scan results: ${banditResults}"
+
+                    // Afficher un message si des problèmes de sécurité sont trouvés
+                    if (banditResults.contains("High")) {
+                        currentBuild.result = 'FAILURE'
+                    }
                 }
             }
         }
@@ -28,6 +33,8 @@ pipeline {
                     // Exécute Nmap pour scanner les ports 80 et 443 sur localhost
                     def nmapResults = sh(script: 'nmap -T4 -sS -p 80,443 localhost', returnStdout: true).trim()
                     echo "Nmap scan results: ${nmapResults}"
+
+                    // Ajouter un contrôle des résultats Nmap si nécessaire (par exemple, vérifier si des ports vulnérables sont ouverts)
                 }
             }
         }
@@ -35,9 +42,11 @@ pipeline {
         stage('Run ZAP Scan') {
             steps {
                 script {
-                    // Exécute ZAP pour scanner le site web local (assurez-vous que ZAP est configuré)
+                    // Exécute ZAP pour scanner le site web local
                     def zapResults = sh(script: 'zaproxy -cmd -quickurl http://localhost:5000', returnStdout: true).trim()
                     echo "ZAP scan results: ${zapResults}"
+
+                    // Ajouter un contrôle des résultats ZAP pour détecter les vulnérabilités critiques
                 }
             }
         }
