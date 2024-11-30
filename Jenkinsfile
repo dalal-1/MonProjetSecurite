@@ -26,7 +26,7 @@ pipeline {
             steps {
                 script {
                     sh 'sudo nmap -p 80,443,8080 127.0.0.1 -oN /var/lib/jenkins/nmap_scan_results.txt'
-                    sendDiscordNotification("🛠️ **Étape 2 : Scan Nmap Terminé** 🕵️‍♂️\nLe scan des ports a été effectué. Voici un résumé des résultats :\n\n```txt\n$(cat /var/lib/jenkins/nmap_scan_results.txt)```.\n\nLes détails complets sont enregistrés dans un fichier texte. [Consultez-le ici](file:///var/lib/jenkins/nmap_scan_results.txt).")
+                    sendDiscordNotification("🛠️ **Étape 2 : Scan Nmap Terminé** 🕵️‍♂️\nLe scan des ports a été effectué. Voici un résumé des résultats :\n\n```txt\n${sh(script: 'cat /var/lib/jenkins/nmap_scan_results.txt', returnStdout: true).trim()}```.\n\nLes détails complets sont enregistrés dans un fichier texte. [Consultez-le ici](file:///var/lib/jenkins/nmap_scan_results.txt).")
                 }
             }
         }
